@@ -1,0 +1,1386 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Nav+Carousel Grid Editor</title>
+
+  <!-- Markdown (optional but enabled by default) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#f6f7f9;
+      --panel:#ffffff;
+      --text:#111;
+      --muted:#6b7280;
+      --line:rgba(0,0,0,.10);
+      --shadow:0 10px 30px rgba(0,0,0,.12);
+      --shadow2:0 2px 10px rgba(0,0,0,.08);
+      --radius:12px;
+      --radius2:10px;
+      --navH:56px;
+      --tabH:48px;
+      --phoneW:375px;
+      --phoneH:740px;
+      --accent:#111;
+      --accent2:#111;
+      --useGrad:0;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+      background:var(--bg);
+      color:var(--text);
+      height:100vh;
+      display:flex;
+      overflow:hidden;
+    }
+
+    /* ====== Layout ====== */
+    .left{
+      width:360px;
+      min-width:330px;
+      background:var(--panel);
+      border-right:1px solid var(--line);
+      box-shadow: 2px 0 14px rgba(0,0,0,.04);
+      overflow:auto;
+    }
+    .right{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      overflow:hidden;
+    }
+
+    .panelHead{
+      padding:16px 16px 12px;
+      border-bottom:1px solid var(--line);
+      position:sticky;
+      top:0;
+      background:var(--panel);
+      z-index:10;
+    }
+    .panelHead h1{
+      margin:0;
+      font-size:16px;
+      letter-spacing:.04em;
+      font-weight:700;
+    }
+    .panelHead p{
+      margin:6px 0 0;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.4;
+    }
+
+    .section{
+      padding:14px 16px;
+      border-bottom:1px solid rgba(0,0,0,.06);
+    }
+    .section h2{
+      margin:0 0 10px;
+      font-size:13px;
+      letter-spacing:.06em;
+      color:#111;
+    }
+    .row{display:flex; gap:10px; align-items:center}
+    .col{flex:1}
+    label{
+      display:block;
+      font-size:12px;
+      color:var(--muted);
+      margin:8px 0 6px;
+    }
+    input[type="text"], input[type="url"], textarea, select, input[type="number"]{
+      width:100%;
+      padding:10px 10px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      outline:none;
+      font-size:13px;
+      background:#fff;
+    }
+    textarea{min-height:72px; resize:vertical}
+    input[type="color"]{
+      width:44px; height:38px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:0;
+      background:#fff;
+    }
+    input[type="checkbox"]{transform:translateY(1px)}
+    .hint{font-size:12px; color:var(--muted); line-height:1.4; margin-top:6px}
+
+    .btnRow{display:flex; gap:10px; margin-top:10px}
+    button{
+      cursor:pointer;
+      border:1px solid var(--line);
+      background:#fff;
+      color:#111;
+      padding:10px 10px;
+      border-radius:10px;
+      font-size:13px;
+      font-weight:650;
+      transition:.15s;
+    }
+    button:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.06)}
+    button.primary{
+      background:#111;
+      color:#fff;
+      border-color:#111;
+    }
+    button.danger{
+      background:#fff;
+      color:#b42318;
+      border-color:rgba(180,35,24,.28);
+    }
+    button.small{
+      padding:7px 9px;
+      font-size:12px;
+      border-radius:9px;
+      font-weight:650;
+    }
+
+    /* Tabs editor */
+    .seg{
+      display:flex;
+      gap:6px;
+      background:#f2f3f5;
+      border:1px solid rgba(0,0,0,.06);
+      padding:6px;
+      border-radius:12px;
+    }
+    .seg button{
+      flex:1;
+      border:0;
+      background:transparent;
+      box-shadow:none;
+      transform:none;
+      padding:10px 8px;
+      border-radius:10px;
+      color:#555;
+      font-weight:750;
+    }
+    .seg button.active{
+      background:#fff;
+      border:1px solid rgba(0,0,0,.08);
+      color:#111;
+    }
+
+    /* Item list */
+    .itemList{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      max-height:340px;
+      overflow:auto;
+      padding-right:4px;
+    }
+    .itemCard{
+      border:1px solid rgba(0,0,0,.08);
+      border-radius:12px;
+      background:#fafafa;
+      padding:10px 10px;
+      cursor:pointer;
+      transition:.12s;
+    }
+    .itemCard:hover{border-color:rgba(0,0,0,.18)}
+    .itemCard.selected{border-color:#111; background:#fff}
+    .itemTop{display:flex; align-items:center; justify-content:space-between; gap:10px}
+    .itemTitleMini{font-weight:800; font-size:13px}
+    .miniMuted{font-size:12px; color:var(--muted)}
+    .miniBtns{display:flex; gap:6px}
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      font-size:11px; color:#111;
+      border:1px solid rgba(0,0,0,.10);
+      background:#fff;
+      padding:4px 8px;
+      border-radius:999px;
+    }
+
+    /* ====== Right/Preview ====== */
+    .topBar{
+      height:56px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:0 16px;
+      border-bottom:1px solid rgba(0,0,0,.06);
+      background:#fff;
+    }
+    .topBar h3{
+      margin:0;
+      font-size:14px;
+      letter-spacing:.06em;
+      font-weight:800;
+      color:#111;
+    }
+    .previewWrap{
+      flex:1;
+      overflow:auto;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      padding:28px 16px;
+    }
+
+    .phone{
+      width:var(--phoneW);
+      height:var(--phoneH);
+      background:#fff;
+      border-radius:34px;
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      position:relative;
+      border:1px solid rgba(0,0,0,.08);
+    }
+    .phone::before{
+      content:"";
+      position:absolute;
+      top:10px; left:50%;
+      width:120px; height:22px;
+      transform:translateX(-50%);
+      border-radius:999px;
+      background:rgba(0,0,0,.06);
+      z-index:5;
+    }
+
+    /* ====== Mobile UI (inside phone) ====== */
+    .mRoot{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      background:#f6f7f9;
+    }
+
+    .mNav{
+      height:var(--navH);
+      padding:14px 16px 12px;
+      color:#fff;
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      position:sticky;
+      top:0;
+      z-index:3;
+    }
+    .mNav h1{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.02em;
+      font-weight:800;
+    }
+    .mNav .sub{
+      font-size:12px;
+      opacity:.9;
+      margin-top:2px;
+      line-height:1.2;
+    }
+
+    .mTabs{
+      height:var(--tabH);
+      background:#fff;
+      border-bottom:1px solid rgba(0,0,0,.06);
+      display:flex;
+      position:sticky;
+      top:var(--navH);
+      z-index:2;
+    }
+    .mTabBtn{
+      flex:1;
+      border:0;
+      background:transparent;
+      font-size:13px;
+      font-weight:800;
+      letter-spacing:.04em;
+      color:#6b7280;
+      position:relative;
+      padding:0 6px;
+    }
+    .mTabBtn.active{color:#111}
+    .mTabBtn.active::after{
+      content:"";
+      position:absolute;
+      left:12px; right:12px; bottom:0;
+      height:3px;
+      border-radius:999px;
+      background:#111;
+      opacity:.95;
+    }
+
+    .mContent{
+      flex:1;
+      overflow:hidden; /* carousel handle */
+    }
+    .mCarousel{
+      height:100%;
+      display:flex;
+      transition:transform .34s cubic-bezier(.2,.8,.2,1);
+      will-change:transform;
+    }
+    .mSlide{
+      min-width:100%;
+      height:100%;
+      overflow:auto;
+      padding:14px 14px 18px;
+    }
+
+    .mGrid{
+      display:grid;
+      gap:12px;
+    }
+    /* grid presets */
+    .grid2 { grid-template-columns: repeat(2, 1fr); }
+    .grid3 { grid-template-columns: repeat(3, 1fr); }
+    .mCard{
+      background:#fff;
+      border:1px solid rgba(0,0,0,.08);
+      border-radius:var(--radius);
+      padding:12px 12px;
+      box-shadow:0 6px 18px rgba(0,0,0,.04);
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      cursor:pointer;
+      transition:.12s;
+      overflow:hidden;
+    }
+    .mCard:active{transform:scale(.985)}
+    .mCardTop{
+      display:flex; gap:10px; align-items:center;
+    }
+    .mIcon{
+      width:40px; height:40px;
+      border-radius:12px;
+      display:flex; align-items:center; justify-content:center;
+      font-size:22px;
+      background:rgba(0,0,0,.04);
+      border:1px solid rgba(0,0,0,.06);
+      flex:0 0 auto;
+      overflow:hidden;
+    }
+    .mIcon img{width:100%; height:100%; object-fit:cover}
+    .mTitle{font-size:14px; font-weight:900; line-height:1.2}
+    .mDesc{font-size:12px; color:#6b7280; line-height:1.35}
+    .mBadgeRow{display:flex; gap:6px; flex-wrap:wrap}
+    .mBadge{
+      font-size:11px;
+      border:1px solid rgba(0,0,0,.08);
+      background:rgba(0,0,0,.03);
+      padding:4px 8px;
+      border-radius:999px;
+      color:#111;
+      font-weight:750;
+    }
+
+    /* Markdown rendering */
+    .md-render p{margin:0 0 .55em 0}
+    .md-render p:last-child{margin-bottom:0}
+    .md-render ul,.md-render ol{margin:.25em 0 .6em 1.2em; padding:0}
+    .md-render li{margin:.12em 0}
+    .md-render a{color:inherit; text-decoration:underline; text-underline-offset:2px}
+    .md-render code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size:.95em;
+      background:rgba(0,0,0,.06);
+      padding:.1em .25em;
+      border-radius:8px;
+    }
+    .md-render pre{
+      background:rgba(0,0,0,.06);
+      padding:10px;
+      border-radius:12px;
+      overflow:auto;
+      margin:.4em 0;
+    }
+    .md-render pre code{background:transparent; padding:0}
+
+    .mdBox{
+      border:1px solid rgba(0,0,0,.08);
+      background:#fafafa;
+      border-radius:12px;
+      padding:10px;
+      font-size:12.5px;
+      color:#111;
+    }
+    .mdTitle{
+      font-size:12px;
+      color:var(--muted);
+      margin:8px 0 6px;
+      letter-spacing:.06em;
+      font-weight:800;
+    }
+
+    .footNote{
+      padding:10px 14px;
+      font-size:11px;
+      color:rgba(255,255,255,.92);
+      opacity:.92;
+    }
+
+    @media (max-width: 980px){
+      body{flex-direction:column}
+      .left{width:100%; min-width:unset; height:50vh}
+      .right{height:50vh}
+      .previewWrap{padding:16px}
+    }
+  </style>
+</head>
+
+<body>
+  <aside class="left">
+    <div class="panelHead">
+      <h1>Nav + Carousel Grid エディタ</h1>
+      <p>スマホUI：最上部ナビバー固定 → 直下のタブ選択で、下のグリッドがカルーセル移動。</p>
+    </div>
+
+    <div class="section">
+      <h2>プロジェクト</h2>
+      <div class="btnRow">
+        <button class="primary" onclick="saveJSON()">保存(JSON)</button>
+        <button onclick="triggerLoad()">読込(JSON)</button>
+      </div>
+      <div class="btnRow">
+        <button onclick="exportHTML()">HTML出力</button>
+        <button class="danger" onclick="resetProject()">新規</button>
+      </div>
+      <input id="loadFile" type="file" accept=".json" style="display:none" onchange="handleLoad(event)" />
+      <div class="hint">※保存/読込はこのエディタ用。HTML出力は配布用ページを生成。</div>
+    </div>
+
+    <div class="section">
+      <h2>ページ設定</h2>
+      <label>ページタイトル</label>
+      <input id="pageTitle" type="text" value="モバイルダッシュボード" oninput="syncFromUI()" />
+
+      <label>サブテキスト（任意）</label>
+      <input id="pageSub" type="text" value="すぐ下でカテゴリを切替" oninput="syncFromUI()" />
+
+      <div class="row">
+        <div class="col">
+          <label>ナビ色1</label>
+          <input id="navColor1" type="color" value="#111111" oninput="syncFromUI()" />
+        </div>
+        <div class="col">
+          <label>ナビ色2</label>
+          <input id="navColor2" type="color" value="#111111" oninput="syncFromUI()" />
+        </div>
+        <div class="col" style="padding-top:22px;">
+          <label style="display:flex; gap:8px; align-items:center; margin:0;">
+            <input id="useGrad" type="checkbox" onchange="syncFromUI()" />
+            グラデ
+          </label>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:6px;">
+        <div class="col">
+          <label>タブ数</label>
+          <select id="tabCount" onchange="applyTabCount()">
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>グリッド列数</label>
+          <select id="gridCols" onchange="syncFromUI()">
+            <option value="2" selected>2列（おすすめ）</option>
+            <option value="3">3列（密）</option>
+          </select>
+        </div>
+        <div class="col">
+          <label>カード角丸</label>
+          <input id="cardRadius" type="number" min="6" max="24" value="12" oninput="syncFromUI()" />
+        </div>
+      </div>
+
+      <div class="hint">タブ数(2/3)は「選択肢」そのもの。グリッドは各タブの中身がカルーセルで切り替わる。</div>
+    </div>
+
+    <div class="section">
+      <h2>タブ選択（編集対象）</h2>
+      <div class="seg" id="tabSeg"></div>
+
+      <label style="margin-top:12px;">タブ名</label>
+      <input id="tabName" type="text" value="" oninput="renameTab()" />
+
+      <div class="hint">スマホ側：このタブをタップするとカルーセル移動します。</div>
+    </div>
+
+    <div class="section">
+      <h2>グリッドアイテム</h2>
+      <div class="btnRow">
+        <button class="primary" onclick="addItem()">＋追加</button>
+        <button onclick="duplicateItem()" title="選択中のアイテムを複製">複製</button>
+      </div>
+
+      <label style="margin-top:12px;">一覧</label>
+      <div class="itemList" id="itemList"></div>
+
+      <div class="hint">↑↓で並べ替え可。削除はゴミ箱。</div>
+    </div>
+
+    <div class="section" id="editSection" style="display:none;">
+      <h2>アイテム編集</h2>
+
+      <div class="row">
+        <div class="col">
+          <label>絵文字アイコン</label>
+          <input id="itEmoji" type="text" value="📦" oninput="updateItem()" />
+        </div>
+        <div class="col">
+          <label>画像URL（任意）</label>
+          <input id="itImg" type="url" placeholder="https://..." oninput="updateItem()" />
+        </div>
+      </div>
+
+      <label>タイトル（Markdown可）</label>
+      <input id="itTitle" type="text" value="" oninput="updateItem()" />
+
+      <label>説明（Markdown可）</label>
+      <textarea id="itDesc" oninput="updateItem()"></textarea>
+
+      <div class="row">
+        <div class="col">
+          <label>リンク（任意）</label>
+          <input id="itLink" type="url" placeholder="https://..." oninput="updateItem()" />
+        </div>
+        <div class="col">
+          <label>バッジ（カンマ区切り）</label>
+          <input id="itBadges" type="text" placeholder="NEW,人気,作業中" oninput="updateItem()" />
+        </div>
+      </div>
+
+      <div class="btnRow">
+        <button class="danger" onclick="deleteItem()">🗑️ 削除</button>
+      </div>
+
+      <div class="mdTitle">Markdownプレビュー</div>
+      <div class="mdBox md-render" id="mdPreview">（ここにプレビュー）</div>
+
+      <div class="hint">安全のため HTML 直書きは除去されます（DOMPurify）。</div>
+    </div>
+  </aside>
+
+  <main class="right">
+    <div class="topBar">
+      <h3>プレビュー</h3>
+      <div class="row" style="gap:10px;">
+        <button class="small" onclick="refresh()">🔄 更新</button>
+        <button class="small" onclick="toggleSwipeHint()">👆 スワイプ</button>
+      </div>
+    </div>
+
+    <div class="previewWrap">
+      <div class="phone">
+        <div class="mRoot" id="previewRoot"></div>
+      </div>
+    </div>
+  </main>
+
+<script>
+  // ===== Data =====
+  let data = {
+    pageTitle: "モバイルダッシュボード",
+    pageSub: "すぐ下でカテゴリを切替",
+    navColor1: "#111111",
+    navColor2: "#111111",
+    useGrad: false,
+    tabCount: 3,
+    gridCols: 2,
+    cardRadius: 12,
+    tabs: [
+      { name:"ホーム", items:[
+        { emoji:"📊", img:"", title:"**統計**", desc:"- 今日の閲覧数\n- 週次推移", link:"", badges:["NEW"] },
+        { emoji:"✅", img:"", title:"タスク", desc:"未完了: **12件**", link:"", badges:["作業中"] },
+        { emoji:"📦", img:"", title:"配送", desc:"発送状況をチェック", link:"", badges:[] },
+        { emoji:"🛠️", img:"", title:"ツール", desc:"よく使う機能", link:"", badges:["人気"] },
+      ]},
+      { name:"作業", items:[
+        { emoji:"🧠", img:"", title:"メモ", desc:"思考のログを残す", link:"", badges:[] },
+        { emoji:"🎬", img:"", title:"制作", desc:"動画/画像の進捗", link:"", badges:["HOT"] },
+        { emoji:"🗂️", img:"", title:"素材", desc:"フォルダ整理", link:"", badges:[] },
+        { emoji:"📅", img:"", title:"予定", desc:"今週の段取り", link:"", badges:[] },
+      ]},
+      { name:"設定", items:[
+        { emoji:"👤", img:"", title:"プロフィール", desc:"アカウント情報", link:"", badges:[] },
+        { emoji:"🔐", img:"", title:"セキュリティ", desc:"パスワード変更", link:"", badges:[] },
+        { emoji:"🔔", img:"", title:"通知", desc:"オン/オフ", link:"", badges:[] },
+        { emoji:"🌙", img:"", title:"テーマ", desc:"ダークモード", link:"", badges:["β"] },
+      ]},
+    ]
+  };
+
+  let currentTab = 0;
+  let currentItem = -1;
+
+  // ===== Markdown =====
+  function escapeHtml(s){
+    return (s||"")
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#39;");
+  }
+  function md(s){
+    const t = (s==null) ? "" : String(s);
+    try{
+      if(window.marked && window.DOMPurify){
+        return DOMPurify.sanitize(marked.parse(t));
+      }
+    }catch(e){}
+    return escapeHtml(t).replace(/\n/g,"<br>");
+  }
+
+  // ===== UI Sync =====
+  function loadUI(){
+    pageTitle.value = data.pageTitle;
+    pageSub.value = data.pageSub;
+    navColor1.value = data.navColor1;
+    navColor2.value = data.navColor2;
+    useGrad.checked = !!data.useGrad;
+    tabCount.value = String(data.tabCount);
+    gridCols.value = String(data.gridCols);
+    cardRadius.value = String(data.cardRadius);
+
+    buildTabSeg();
+    tabName.value = data.tabs[currentTab]?.name || "";
+    buildItemList();
+    renderPreview();
+  }
+
+  function syncFromUI(){
+    data.pageTitle = pageTitle.value;
+    data.pageSub = pageSub.value;
+    data.navColor1 = navColor1.value;
+    data.navColor2 = navColor2.value;
+    data.useGrad = useGrad.checked;
+    data.tabCount = parseInt(tabCount.value,10);
+    data.gridCols = parseInt(gridCols.value,10);
+    data.cardRadius = clamp(parseInt(cardRadius.value,10)||12, 6, 24);
+    cardRadius.value = String(data.cardRadius);
+
+    // reflect count -> ensure tabs length
+    normalizeTabs();
+    buildTabSeg();
+    tabName.value = data.tabs[currentTab]?.name || "";
+    buildItemList();
+    renderPreview();
+  }
+
+  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+
+  function applyTabCount(){
+    data.tabCount = parseInt(tabCount.value,10);
+    normalizeTabs();
+    currentTab = Math.min(currentTab, data.tabs.length-1);
+    currentItem = -1;
+    hideEditor();
+    loadUI();
+  }
+
+  function normalizeTabs(){
+    const want = data.tabCount || 3;
+    while(data.tabs.length < want){
+      data.tabs.push({ name: `タブ${data.tabs.length+1}`, items: [] });
+    }
+    while(data.tabs.length > want){
+      data.tabs.pop();
+    }
+  }
+
+  // ===== Tab Segment =====
+  function buildTabSeg(){
+    const seg = document.getElementById("tabSeg");
+    seg.innerHTML = "";
+    data.tabs.forEach((t,i)=>{
+      const b = document.createElement("button");
+      b.textContent = `タブ${i+1}`;
+      b.className = (i===currentTab) ? "active" : "";
+      b.onclick = ()=>{ selectTab(i); };
+      seg.appendChild(b);
+    });
+  }
+  function selectTab(i){
+    currentTab = i;
+    currentItem = -1;
+    hideEditor();
+    tabName.value = data.tabs[currentTab].name;
+    buildTabSeg();
+    buildItemList();
+    renderPreview();
+  }
+  function renameTab(){
+    data.tabs[currentTab].name = tabName.value || `タブ${currentTab+1}`;
+    renderPreview();
+  }
+
+  // ===== Items =====
+  function buildItemList(){
+    const list = document.getElementById("itemList");
+    list.innerHTML = "";
+
+    const items = data.tabs[currentTab].items;
+    items.forEach((it, idx)=>{
+      const card = document.createElement("div");
+      card.className = "itemCard" + (idx===currentItem ? " selected":"");
+      card.onclick = ()=> selectItem(idx);
+
+      const top = document.createElement("div");
+      top.className = "itemTop";
+
+      const left = document.createElement("div");
+      left.style.display = "flex";
+      left.style.flexDirection = "column";
+      left.style.gap = "2px";
+
+      const title = document.createElement("div");
+      title.className = "itemTitleMini";
+      title.textContent = `${it.emoji || "🧩"} ${stripMd(it.title || "（無題）")}`;
+
+      const desc = document.createElement("div");
+      desc.className = "miniMuted";
+      desc.textContent = stripMd((it.desc || "").replace(/\n/g," ")).slice(0,40);
+
+      left.appendChild(title);
+      left.appendChild(desc);
+
+      const btns = document.createElement("div");
+      btns.className = "miniBtns";
+      btns.innerHTML = `
+        <button class="small" title="上へ" ${idx===0 ? "disabled":""}>↑</button>
+        <button class="small" title="下へ" ${idx===items.length-1 ? "disabled":""}>↓</button>
+        <button class="small" title="削除">🗑️</button>
+      `;
+
+      const [up, down, del] = btns.querySelectorAll("button");
+      up.onclick = (e)=>{ e.stopPropagation(); moveItem(idx,-1); };
+      down.onclick = (e)=>{ e.stopPropagation(); moveItem(idx, +1); };
+      del.onclick = (e)=>{ e.stopPropagation(); deleteItem(idx); };
+
+      top.appendChild(left);
+      top.appendChild(btns);
+
+      const meta = document.createElement("div");
+      meta.style.marginTop = "8px";
+      meta.style.display = "flex";
+      meta.style.gap = "8px";
+      meta.style.flexWrap = "wrap";
+
+      if(it.link) meta.innerHTML += `<span class="pill">🔗 link</span>`;
+      if((it.badges||[]).length) meta.innerHTML += `<span class="pill">🏷️ ${(it.badges||[]).length}</span>`;
+      if(it.img) meta.innerHTML += `<span class="pill">🖼️ img</span>`;
+
+      card.appendChild(top);
+      card.appendChild(meta);
+      list.appendChild(card);
+    });
+  }
+
+  function stripMd(s){
+    return (s||"")
+      .replace(/`{1,3}[\s\S]*?`{1,3}/g,"")
+      .replace(/\*\*|__|\*|_/g,"")
+      .replace(/\[([^\]]+)\]\([^)]+\)/g,"$1")
+      .replace(/#+\s?/g,"")
+      .trim();
+  }
+
+  function addItem(){
+    const it = { emoji:"📝", img:"", title:"新しいアイテム", desc:"説明を入力", link:"", badges:[] };
+    data.tabs[currentTab].items.push(it);
+    buildItemList();
+    renderPreview();
+    selectItem(data.tabs[currentTab].items.length-1);
+  }
+
+  function duplicateItem(){
+    if(currentItem<0) return;
+    const it = data.tabs[currentTab].items[currentItem];
+    const copy = JSON.parse(JSON.stringify(it));
+    data.tabs[currentTab].items.splice(currentItem+1, 0, copy);
+    buildItemList();
+    renderPreview();
+    selectItem(currentItem+1);
+  }
+
+  function selectItem(idx){
+    currentItem = idx;
+    const it = data.tabs[currentTab].items[idx];
+    editSection.style.display = "block";
+
+    itEmoji.value = it.emoji || "";
+    itImg.value = it.img || "";
+    itTitle.value = it.title || "";
+    itDesc.value = it.desc || "";
+    itLink.value = it.link || "";
+    itBadges.value = (it.badges || []).join(",");
+
+    buildItemList();
+    updateMdPreview();
+  }
+
+  function hideEditor(){
+    editSection.style.display = "none";
+    currentItem = -1;
+  }
+
+  function updateItem(){
+    if(currentItem<0) return;
+    const it = data.tabs[currentTab].items[currentItem];
+    it.emoji = itEmoji.value || "🧩";
+    it.img = itImg.value || "";
+    it.title = itTitle.value || "（無題）";
+    it.desc = itDesc.value || "";
+    it.link = itLink.value || "";
+    it.badges = (itBadges.value || "")
+      .split(",")
+      .map(s=>s.trim())
+      .filter(Boolean)
+      .slice(0, 10);
+
+    buildItemList();
+    updateMdPreview();
+    renderPreview();
+  }
+
+  function updateMdPreview(){
+    if(currentItem<0) return;
+    const it = data.tabs[currentTab].items[currentItem];
+    const box = document.getElementById("mdPreview");
+    const text = (it.title ? `### ${it.title}\n\n` : "") + (it.desc || "");
+    box.innerHTML = md(text);
+  }
+
+  function deleteItem(idx){
+    const items = data.tabs[currentTab].items;
+    if(idx==null){
+      if(currentItem<0) return;
+      idx = currentItem;
+    }
+    const name = stripMd(items[idx]?.title || "このアイテム");
+    if(!confirm(`「${name}」を削除しますか？`)) return;
+
+    items.splice(idx,1);
+    if(currentItem===idx) hideEditor();
+    else if(currentItem>idx) currentItem--;
+
+    buildItemList();
+    renderPreview();
+  }
+
+  function moveItem(idx, dir){
+    const items = data.tabs[currentTab].items;
+    const j = idx + dir;
+    if(j<0 || j>=items.length) return;
+    [items[idx], items[j]] = [items[j], items[idx]];
+    if(currentItem===idx) currentItem=j;
+    else if(currentItem===j) currentItem=idx;
+    buildItemList();
+    renderPreview();
+  }
+
+  // ===== Preview Render =====
+  function navBg(){
+    return data.useGrad
+      ? `linear-gradient(135deg, ${data.navColor1} 0%, ${data.navColor2} 100%)`
+      : data.navColor1;
+  }
+
+  function renderPreview(){
+    const root = document.getElementById("previewRoot");
+    root.innerHTML = "";
+
+    // Nav
+    const nav = document.createElement("div");
+    nav.className = "mNav";
+    nav.style.background = navBg();
+    nav.innerHTML = `
+      <div>
+        <h1>${escapeHtml(data.pageTitle || "")}</h1>
+        <div class="sub">${escapeHtml(data.pageSub || "")}</div>
+      </div>
+      <div class="footNote"></div>
+    `;
+
+    // Tabs
+    const tabs = document.createElement("div");
+    tabs.className = "mTabs";
+
+    data.tabs.forEach((t, i)=>{
+      const b = document.createElement("button");
+      b.className = "mTabBtn" + (i===currentTab ? " active":"");
+      b.textContent = t.name || `タブ${i+1}`;
+      b.onclick = ()=> switchTab(i);
+      tabs.appendChild(b);
+    });
+
+    // Carousel
+    const content = document.createElement("div");
+    content.className = "mContent";
+
+    const car = document.createElement("div");
+    car.className = "mCarousel";
+    car.id = "mCarousel";
+
+    data.tabs.forEach((t, i)=>{
+      const slide = document.createElement("div");
+      slide.className = "mSlide";
+      const grid = document.createElement("div");
+      grid.className = "mGrid " + (data.gridCols===3 ? "grid3" : "grid2");
+      grid.style.setProperty("--radius", data.cardRadius + "px");
+
+      (t.items||[]).forEach((it)=>{
+        const card = document.createElement("div");
+        card.className = "mCard";
+        card.style.borderRadius = data.cardRadius + "px";
+
+        const icon = it.img
+          ? `<div class="mIcon"><img src="${escapeHtml(it.img)}" onerror="this.closest('.mIcon').style.display='none'"></div>`
+          : `<div class="mIcon">${escapeHtml(it.emoji || "🧩")}</div>`;
+
+        const badges = (it.badges||[]).map(b=>`<span class="mBadge">${escapeHtml(b)}</span>`).join("");
+
+        card.innerHTML = `
+          <div class="mCardTop">
+            ${icon}
+            <div style="min-width:0">
+              <div class="mTitle md-render">${md(it.title || "")}</div>
+              <div class="mDesc md-render">${md(it.desc || "")}</div>
+            </div>
+          </div>
+          ${badges ? `<div class="mBadgeRow">${badges}</div>` : ""}
+        `;
+
+        card.onclick = ()=>{
+          if(it.link){
+            window.open(it.link, "_blank");
+          }else{
+            alert(`「${stripMd(it.title||"アイテム")}」がタップされました`);
+          }
+        };
+
+        grid.appendChild(card);
+      });
+
+      slide.appendChild(grid);
+      car.appendChild(slide);
+    });
+
+    content.appendChild(car);
+
+    root.appendChild(nav);
+    root.appendChild(tabs);
+    root.appendChild(content);
+
+    // Position
+    applyCarouselPos();
+    attachSwipe(content);
+  }
+
+  function switchTab(i){
+    currentTab = i;
+    buildTabSeg();
+    tabName.value = data.tabs[currentTab].name || "";
+    buildItemList();
+    hideEditor();
+    renderPreview();
+  }
+
+  function applyCarouselPos(){
+    const car = document.getElementById("mCarousel");
+    if(!car) return;
+    car.style.transform = `translateX(-${currentTab*100}%)`;
+  }
+
+  // ===== Swipe =====
+  let swipeBound = false;
+  let swipeHintOn = false;
+
+  function attachSwipe(area){
+    if(swipeBound) return;
+    swipeBound = true;
+
+    let startX=0, startY=0, dx=0, dragging=false;
+    area.addEventListener("touchstart",(e)=>{
+      if(!e.touches?.length) return;
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      dx = 0;
+      dragging = true;
+    }, {passive:true});
+
+    area.addEventListener("touchmove",(e)=>{
+      if(!dragging || !e.touches?.length) return;
+      dx = e.touches[0].clientX - startX;
+      const dy = e.touches[0].clientY - startY;
+      if(Math.abs(dy) > Math.abs(dx)) return; // vertical scroll priority
+      // optional: small follow
+      const car = document.getElementById("mCarousel");
+      if(car){
+        car.style.transition = "none";
+        const base = -currentTab * 100;
+        const follow = (dx / area.clientWidth) * 100;
+        car.style.transform = `translateX(${base + follow}%)`;
+      }
+    }, {passive:true});
+
+    area.addEventListener("touchend",()=>{
+      if(!dragging) return;
+      dragging = false;
+
+      const car = document.getElementById("mCarousel");
+      if(car) car.style.transition = "transform .34s cubic-bezier(.2,.8,.2,1)";
+
+      if(Math.abs(dx) > 50){
+        if(dx < 0 && currentTab < data.tabs.length-1) currentTab++;
+        if(dx > 0 && currentTab > 0) currentTab--;
+      }
+      renderPreview();
+    }, {passive:true});
+  }
+
+  function toggleSwipeHint(){
+    swipeHintOn = !swipeHintOn;
+    alert(swipeHintOn
+      ? "スマホでは左右スワイプでもタブ移動します（縦スクロール優先）。"
+      : "OK");
+  }
+
+  // ===== Project IO =====
+  function saveJSON(){
+    const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "nav-carousel-project.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function triggerLoad(){
+    document.getElementById("loadFile").click();
+  }
+
+  function handleLoad(ev){
+    const f = ev.target.files?.[0];
+    if(!f) return;
+    const r = new FileReader();
+    r.onload = ()=>{
+      try{
+        const obj = JSON.parse(r.result);
+        // light validate
+        if(!obj || !Array.isArray(obj.tabs)) throw new Error("invalid");
+        data = obj;
+
+        // normalize missing defaults
+        if(!data.pageTitle) data.pageTitle = "モバイルダッシュボード";
+        if(!("useGrad" in data)) data.useGrad = false;
+        if(!data.tabCount) data.tabCount = data.tabs.length;
+        if(!data.gridCols) data.gridCols = 2;
+        if(!data.cardRadius) data.cardRadius = 12;
+
+        normalizeTabs();
+        currentTab = 0;
+        currentItem = -1;
+        hideEditor();
+        loadUI();
+        alert("✅ 読込しました");
+      }catch(e){
+        alert("❌ JSONが壊れてるか形式が違います");
+      }
+    };
+    r.readAsText(f);
+    ev.target.value = "";
+  }
+
+  function resetProject(){
+    if(!confirm("新規にします（今の編集は消えます）。OK？")) return;
+    data = {
+      pageTitle: "モバイルダッシュボード",
+      pageSub: "すぐ下でカテゴリを切替",
+      navColor1: "#111111",
+      navColor2: "#111111",
+      useGrad: false,
+      tabCount: 3,
+      gridCols: 2,
+      cardRadius: 12,
+      tabs: [
+        { name:"ホーム", items:[] },
+        { name:"作業", items:[] },
+        { name:"設定", items:[] },
+      ]
+    };
+    currentTab = 0;
+    currentItem = -1;
+    hideEditor();
+    loadUI();
+  }
+
+  // ===== Export =====
+  function exportHTML(){
+    // export page uses pre-rendered markdown at runtime for flexibility
+    const safeData = JSON.stringify(data);
+
+    const tpl = `<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>${escapeHtml(data.pageTitle)}</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"><\/script>
+<style>
+  :root{
+    --bg:#f6f7f9;
+    --navH:56px;
+    --tabH:48px;
+    --line:rgba(0,0,0,.10);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;background:var(--bg);color:#111}
+  .nav{
+    height:var(--navH);
+    padding:14px 16px 12px;
+    color:#fff;
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    position:sticky;
+    top:0;
+    z-index:3;
+  }
+  .nav h1{margin:0;font-size:18px;font-weight:900}
+  .nav .sub{font-size:12px;opacity:.9;margin-top:2px}
+  .tabs{
+    height:var(--tabH);
+    background:#fff;
+    border-bottom:1px solid rgba(0,0,0,.06);
+    display:flex;
+    position:sticky;
+    top:var(--navH);
+    z-index:2;
+  }
+  .tabBtn{
+    flex:1;border:0;background:transparent;
+    font-size:13px;font-weight:900;letter-spacing:.04em;
+    color:#6b7280;position:relative;
+  }
+  .tabBtn.active{color:#111}
+  .tabBtn.active::after{
+    content:"";position:absolute;left:12px;right:12px;bottom:0;height:3px;border-radius:999px;background:#111
+  }
+  .content{height:calc(100vh - var(--navH) - var(--tabH));overflow:hidden}
+  .carousel{height:100%;display:flex;transition:transform .34s cubic-bezier(.2,.8,.2,1);will-change:transform}
+  .slide{min-width:100%;height:100%;overflow:auto;padding:14px 14px 18px}
+  .grid{display:grid;gap:12px}
+  .grid2{grid-template-columns:repeat(2,1fr)}
+  .grid3{grid-template-columns:repeat(3,1fr)}
+  .card{
+    background:#fff;border:1px solid rgba(0,0,0,.08);
+    padding:12px;box-shadow:0 6px 18px rgba(0,0,0,.04);
+    display:flex;flex-direction:column;gap:8px;cursor:pointer;overflow:hidden;
+  }
+  .card:active{transform:scale(.985)}
+  .top{display:flex;gap:10px;align-items:center}
+  .icon{
+    width:40px;height:40px;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;font-size:22px;
+    background:rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.06);
+    overflow:hidden;flex:0 0 auto;
+  }
+  .icon img{width:100%;height:100%;object-fit:cover}
+  .title{font-size:14px;font-weight:900;line-height:1.2}
+  .desc{font-size:12px;color:#6b7280;line-height:1.35}
+  .badges{display:flex;gap:6px;flex-wrap:wrap}
+  .badge{font-size:11px;border:1px solid rgba(0,0,0,.08);background:rgba(0,0,0,.03);padding:4px 8px;border-radius:999px;font-weight:800}
+  /* md */
+  .md-render p{margin:0 0 .55em 0}
+  .md-render p:last-child{margin-bottom:0}
+  .md-render ul,.md-render ol{margin:.25em 0 .6em 1.2em;padding:0}
+  .md-render li{margin:.12em 0}
+  .md-render a{color:inherit;text-decoration:underline;text-underline-offset:2px}
+  .md-render code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:.95em;background:rgba(0,0,0,.06);padding:.1em .25em;border-radius:8px}
+  .md-render pre{background:rgba(0,0,0,.06);padding:10px;border-radius:12px;overflow:auto;margin:.4em 0}
+  .md-render pre code{background:transparent;padding:0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+  const data = ${safeData};
+
+  function escapeHtml(s){
+    return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+  function md(s){
+    const t = (s==null) ? "" : String(s);
+    try{
+      return DOMPurify.sanitize(marked.parse(t));
+    }catch(e){
+      return escapeHtml(t).replace(/\\n/g,"<br>");
+    }
+  }
+  function navBg(){
+    return data.useGrad
+      ? \`linear-gradient(135deg, \${data.navColor1} 0%, \${data.navColor2} 100%)\`
+      : data.navColor1;
+  }
+
+  let currentTab = 0;
+
+  function render(){
+    const app = document.getElementById("app");
+    app.innerHTML = "";
+
+    const nav = document.createElement("div");
+    nav.className = "nav";
+    nav.style.background = navBg();
+    nav.innerHTML = \`
+      <div>
+        <h1>\${escapeHtml(data.pageTitle||"")}</h1>
+        <div class="sub">\${escapeHtml(data.pageSub||"")}</div>
+      </div>\`;
+
+    const tabs = document.createElement("div");
+    tabs.className = "tabs";
+
+    (data.tabs||[]).forEach((t,i)=>{
+      const b = document.createElement("button");
+      b.className = "tabBtn" + (i===currentTab ? " active":"");
+      b.textContent = t.name || \`タブ\${i+1}\`;
+      b.onclick = ()=>{ currentTab=i; render(); };
+      tabs.appendChild(b);
+    });
+
+    const content = document.createElement("div");
+    content.className = "content";
+
+    const car = document.createElement("div");
+    car.className = "carousel";
+    car.style.transform = \`translateX(-\${currentTab*100}%)\`;
+
+    (data.tabs||[]).forEach((t)=>{
+      const slide = document.createElement("div");
+      slide.className = "slide";
+
+      const grid = document.createElement("div");
+      grid.className = "grid " + (data.gridCols===3 ? "grid3":"grid2");
+
+      (t.items||[]).forEach((it)=>{
+        const card = document.createElement("div");
+        card.className = "card";
+        card.style.borderRadius = (data.cardRadius||12) + "px";
+
+        const icon = it.img
+          ? \`<div class="icon"><img src="\${escapeHtml(it.img)}" onerror="this.closest('.icon').style.display='none'"></div>\`
+          : \`<div class="icon">\${escapeHtml(it.emoji||"🧩")}</div>\`;
+
+        const badges = (it.badges||[]).map(b=>\`<span class="badge">\${escapeHtml(b)}</span>\`).join("");
+
+        card.innerHTML = \`
+          <div class="top">
+            \${icon}
+            <div style="min-width:0">
+              <div class="title md-render">\${md(it.title||"")}</div>
+              <div class="desc md-render">\${md(it.desc||"")}</div>
+            </div>
+          </div>
+          \${badges ? \`<div class="badges">\${badges}</div>\` : ""}
+        \`;
+
+        card.onclick = ()=>{
+          if(it.link) window.open(it.link,"_blank");
+        };
+
+        grid.appendChild(card);
+      });
+
+      slide.appendChild(grid);
+      car.appendChild(slide);
+    });
+
+    content.appendChild(car);
+
+    app.appendChild(nav);
+    app.appendChild(tabs);
+    app.appendChild(content);
+
+    attachSwipe(content);
+  }
+
+  let swipeBound=false;
+  function attachSwipe(area){
+    if(swipeBound) return;
+    swipeBound=true;
+
+    let startX=0,startY=0,dx=0,drag=false;
+    area.addEventListener("touchstart",(e)=>{
+      startX=e.touches[0].clientX;
+      startY=e.touches[0].clientY;
+      dx=0; drag=true;
+    },{passive:true});
+
+    area.addEventListener("touchmove",(e)=>{
+      if(!drag) return;
+      dx=e.touches[0].clientX-startX;
+      const dy=e.touches[0].clientY-startY;
+      if(Math.abs(dy) > Math.abs(dx)) return;
+      const car=document.querySelector(".carousel");
+      if(car){
+        car.style.transition="none";
+        const base=-currentTab*100;
+        const follow=(dx/area.clientWidth)*100;
+        car.style.transform=\`translateX(\${base+follow}%)\`;
+      }
+    },{passive:true});
+
+    area.addEventListener("touchend",()=>{
+      if(!drag) return;
+      drag=false;
+      const car=document.querySelector(".carousel");
+      if(car) car.style.transition="transform .34s cubic-bezier(.2,.8,.2,1)";
+      if(Math.abs(dx)>50){
+        if(dx<0 && currentTab < (data.tabs.length-1)) currentTab++;
+        if(dx>0 && currentTab>0) currentTab--;
+      }
+      render();
+    },{passive:true});
+  }
+
+  render();
+<\/script>
+</body>
+</html>`;
+
+    const blob = new Blob([tpl], {type:"text/html"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "nav-carousel-page.html";
+    a.click();
+    URL.revokeObjectURL(url);
+    alert("✅ HTMLを出力しました");
+  }
+
+  // ===== Misc =====
+  function refresh(){ renderPreview(); }
+  function toggleSwipeHint(){ toggleSwipeHint(); } // (avoid name collision in some bundlers)
+  function refresh(){ renderPreview(); }
+
+  // init
+  window.onload = loadUI;
+</script>
+
+<script>
+  // fix: above export used refresh() name; keep stable API
+  function refresh(){ renderPreview(); }
+</script>
+</body>
+</html>
