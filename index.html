@@ -1,1386 +1,603 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Nav+Carousel Grid Editor</title>
-
-  <!-- Markdown (optional but enabled by default) -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"></script>
-
-  <style>
-    :root{
-      --bg:#f6f7f9;
-      --panel:#ffffff;
-      --text:#111;
-      --muted:#6b7280;
-      --line:rgba(0,0,0,.10);
-      --shadow:0 10px 30px rgba(0,0,0,.12);
-      --shadow2:0 2px 10px rgba(0,0,0,.08);
-      --radius:12px;
-      --radius2:10px;
-      --navH:56px;
-      --tabH:48px;
-      --phoneW:375px;
-      --phoneH:740px;
-      --accent:#111;
-      --accent2:#111;
-      --useGrad:0;
-    }
-
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
-      background:var(--bg);
-      color:var(--text);
-      height:100vh;
-      display:flex;
-      overflow:hidden;
-    }
-
-    /* ====== Layout ====== */
-    .left{
-      width:360px;
-      min-width:330px;
-      background:var(--panel);
-      border-right:1px solid var(--line);
-      box-shadow: 2px 0 14px rgba(0,0,0,.04);
-      overflow:auto;
-    }
-    .right{
-      flex:1;
-      display:flex;
-      flex-direction:column;
-      overflow:hidden;
-    }
-
-    .panelHead{
-      padding:16px 16px 12px;
-      border-bottom:1px solid var(--line);
-      position:sticky;
-      top:0;
-      background:var(--panel);
-      z-index:10;
-    }
-    .panelHead h1{
-      margin:0;
-      font-size:16px;
-      letter-spacing:.04em;
-      font-weight:700;
-    }
-    .panelHead p{
-      margin:6px 0 0;
-      font-size:12px;
-      color:var(--muted);
-      line-height:1.4;
-    }
-
-    .section{
-      padding:14px 16px;
-      border-bottom:1px solid rgba(0,0,0,.06);
-    }
-    .section h2{
-      margin:0 0 10px;
-      font-size:13px;
-      letter-spacing:.06em;
-      color:#111;
-    }
-    .row{display:flex; gap:10px; align-items:center}
-    .col{flex:1}
-    label{
-      display:block;
-      font-size:12px;
-      color:var(--muted);
-      margin:8px 0 6px;
-    }
-    input[type="text"], input[type="url"], textarea, select, input[type="number"]{
-      width:100%;
-      padding:10px 10px;
-      border:1px solid var(--line);
-      border-radius:10px;
-      outline:none;
-      font-size:13px;
-      background:#fff;
-    }
-    textarea{min-height:72px; resize:vertical}
-    input[type="color"]{
-      width:44px; height:38px;
-      border:1px solid var(--line);
-      border-radius:10px;
-      padding:0;
-      background:#fff;
-    }
-    input[type="checkbox"]{transform:translateY(1px)}
-    .hint{font-size:12px; color:var(--muted); line-height:1.4; margin-top:6px}
-
-    .btnRow{display:flex; gap:10px; margin-top:10px}
-    button{
-      cursor:pointer;
-      border:1px solid var(--line);
-      background:#fff;
-      color:#111;
-      padding:10px 10px;
-      border-radius:10px;
-      font-size:13px;
-      font-weight:650;
-      transition:.15s;
-    }
-    button:hover{transform:translateY(-1px); box-shadow:0 6px 18px rgba(0,0,0,.06)}
-    button.primary{
-      background:#111;
-      color:#fff;
-      border-color:#111;
-    }
-    button.danger{
-      background:#fff;
-      color:#b42318;
-      border-color:rgba(180,35,24,.28);
-    }
-    button.small{
-      padding:7px 9px;
-      font-size:12px;
-      border-radius:9px;
-      font-weight:650;
-    }
-
-    /* Tabs editor */
-    .seg{
-      display:flex;
-      gap:6px;
-      background:#f2f3f5;
-      border:1px solid rgba(0,0,0,.06);
-      padding:6px;
-      border-radius:12px;
-    }
-    .seg button{
-      flex:1;
-      border:0;
-      background:transparent;
-      box-shadow:none;
-      transform:none;
-      padding:10px 8px;
-      border-radius:10px;
-      color:#555;
-      font-weight:750;
-    }
-    .seg button.active{
-      background:#fff;
-      border:1px solid rgba(0,0,0,.08);
-      color:#111;
-    }
-
-    /* Item list */
-    .itemList{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      max-height:340px;
-      overflow:auto;
-      padding-right:4px;
-    }
-    .itemCard{
-      border:1px solid rgba(0,0,0,.08);
-      border-radius:12px;
-      background:#fafafa;
-      padding:10px 10px;
-      cursor:pointer;
-      transition:.12s;
-    }
-    .itemCard:hover{border-color:rgba(0,0,0,.18)}
-    .itemCard.selected{border-color:#111; background:#fff}
-    .itemTop{display:flex; align-items:center; justify-content:space-between; gap:10px}
-    .itemTitleMini{font-weight:800; font-size:13px}
-    .miniMuted{font-size:12px; color:var(--muted)}
-    .miniBtns{display:flex; gap:6px}
-    .pill{
-      display:inline-flex; align-items:center; gap:6px;
-      font-size:11px; color:#111;
-      border:1px solid rgba(0,0,0,.10);
-      background:#fff;
-      padding:4px 8px;
-      border-radius:999px;
-    }
-
-    /* ====== Right/Preview ====== */
-    .topBar{
-      height:56px;
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding:0 16px;
-      border-bottom:1px solid rgba(0,0,0,.06);
-      background:#fff;
-    }
-    .topBar h3{
-      margin:0;
-      font-size:14px;
-      letter-spacing:.06em;
-      font-weight:800;
-      color:#111;
-    }
-    .previewWrap{
-      flex:1;
-      overflow:auto;
-      display:flex;
-      justify-content:center;
-      align-items:flex-start;
-      padding:28px 16px;
-    }
-
-    .phone{
-      width:var(--phoneW);
-      height:var(--phoneH);
-      background:#fff;
-      border-radius:34px;
-      box-shadow:var(--shadow);
-      overflow:hidden;
-      position:relative;
-      border:1px solid rgba(0,0,0,.08);
-    }
-    .phone::before{
-      content:"";
-      position:absolute;
-      top:10px; left:50%;
-      width:120px; height:22px;
-      transform:translateX(-50%);
-      border-radius:999px;
-      background:rgba(0,0,0,.06);
-      z-index:5;
-    }
-
-    /* ====== Mobile UI (inside phone) ====== */
-    .mRoot{
-      height:100%;
-      display:flex;
-      flex-direction:column;
-      background:#f6f7f9;
-    }
-
-    .mNav{
-      height:var(--navH);
-      padding:14px 16px 12px;
-      color:#fff;
-      display:flex;
-      align-items:flex-end;
-      justify-content:space-between;
-      position:sticky;
-      top:0;
-      z-index:3;
-    }
-    .mNav h1{
-      margin:0;
-      font-size:18px;
-      letter-spacing:.02em;
-      font-weight:800;
-    }
-    .mNav .sub{
-      font-size:12px;
-      opacity:.9;
-      margin-top:2px;
-      line-height:1.2;
-    }
-
-    .mTabs{
-      height:var(--tabH);
-      background:#fff;
-      border-bottom:1px solid rgba(0,0,0,.06);
-      display:flex;
-      position:sticky;
-      top:var(--navH);
-      z-index:2;
-    }
-    .mTabBtn{
-      flex:1;
-      border:0;
-      background:transparent;
-      font-size:13px;
-      font-weight:800;
-      letter-spacing:.04em;
-      color:#6b7280;
-      position:relative;
-      padding:0 6px;
-    }
-    .mTabBtn.active{color:#111}
-    .mTabBtn.active::after{
-      content:"";
-      position:absolute;
-      left:12px; right:12px; bottom:0;
-      height:3px;
-      border-radius:999px;
-      background:#111;
-      opacity:.95;
-    }
-
-    .mContent{
-      flex:1;
-      overflow:hidden; /* carousel handle */
-    }
-    .mCarousel{
-      height:100%;
-      display:flex;
-      transition:transform .34s cubic-bezier(.2,.8,.2,1);
-      will-change:transform;
-    }
-    .mSlide{
-      min-width:100%;
-      height:100%;
-      overflow:auto;
-      padding:14px 14px 18px;
-    }
-
-    .mGrid{
-      display:grid;
-      gap:12px;
-    }
-    /* grid presets */
-    .grid2 { grid-template-columns: repeat(2, 1fr); }
-    .grid3 { grid-template-columns: repeat(3, 1fr); }
-    .mCard{
-      background:#fff;
-      border:1px solid rgba(0,0,0,.08);
-      border-radius:var(--radius);
-      padding:12px 12px;
-      box-shadow:0 6px 18px rgba(0,0,0,.04);
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      cursor:pointer;
-      transition:.12s;
-      overflow:hidden;
-    }
-    .mCard:active{transform:scale(.985)}
-    .mCardTop{
-      display:flex; gap:10px; align-items:center;
-    }
-    .mIcon{
-      width:40px; height:40px;
-      border-radius:12px;
-      display:flex; align-items:center; justify-content:center;
-      font-size:22px;
-      background:rgba(0,0,0,.04);
-      border:1px solid rgba(0,0,0,.06);
-      flex:0 0 auto;
-      overflow:hidden;
-    }
-    .mIcon img{width:100%; height:100%; object-fit:cover}
-    .mTitle{font-size:14px; font-weight:900; line-height:1.2}
-    .mDesc{font-size:12px; color:#6b7280; line-height:1.35}
-    .mBadgeRow{display:flex; gap:6px; flex-wrap:wrap}
-    .mBadge{
-      font-size:11px;
-      border:1px solid rgba(0,0,0,.08);
-      background:rgba(0,0,0,.03);
-      padding:4px 8px;
-      border-radius:999px;
-      color:#111;
-      font-weight:750;
-    }
-
-    /* Markdown rendering */
-    .md-render p{margin:0 0 .55em 0}
-    .md-render p:last-child{margin-bottom:0}
-    .md-render ul,.md-render ol{margin:.25em 0 .6em 1.2em; padding:0}
-    .md-render li{margin:.12em 0}
-    .md-render a{color:inherit; text-decoration:underline; text-underline-offset:2px}
-    .md-render code{
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size:.95em;
-      background:rgba(0,0,0,.06);
-      padding:.1em .25em;
-      border-radius:8px;
-    }
-    .md-render pre{
-      background:rgba(0,0,0,.06);
-      padding:10px;
-      border-radius:12px;
-      overflow:auto;
-      margin:.4em 0;
-    }
-    .md-render pre code{background:transparent; padding:0}
-
-    .mdBox{
-      border:1px solid rgba(0,0,0,.08);
-      background:#fafafa;
-      border-radius:12px;
-      padding:10px;
-      font-size:12.5px;
-      color:#111;
-    }
-    .mdTitle{
-      font-size:12px;
-      color:var(--muted);
-      margin:8px 0 6px;
-      letter-spacing:.06em;
-      font-weight:800;
-    }
-
-    .footNote{
-      padding:10px 14px;
-      font-size:11px;
-      color:rgba(255,255,255,.92);
-      opacity:.92;
-    }
-
-    @media (max-width: 980px){
-      body{flex-direction:column}
-      .left{width:100%; min-width:unset; height:50vh}
-      .right{height:50vh}
-      .previewWrap{padding:16px}
-    }
-  </style>
-</head>
-
-<body>
-  <aside class="left">
-    <div class="panelHead">
-      <h1>Nav + Carousel Grid エディタ</h1>
-      <p>スマホUI：最上部ナビバー固定 → 直下のタブ選択で、下のグリッドがカルーセル移動。</p>
-    </div>
-
-    <div class="section">
-      <h2>プロジェクト</h2>
-      <div class="btnRow">
-        <button class="primary" onclick="saveJSON()">保存(JSON)</button>
-        <button onclick="triggerLoad()">読込(JSON)</button>
-      </div>
-      <div class="btnRow">
-        <button onclick="exportHTML()">HTML出力</button>
-        <button class="danger" onclick="resetProject()">新規</button>
-      </div>
-      <input id="loadFile" type="file" accept=".json" style="display:none" onchange="handleLoad(event)" />
-      <div class="hint">※保存/読込はこのエディタ用。HTML出力は配布用ページを生成。</div>
-    </div>
-
-    <div class="section">
-      <h2>ページ設定</h2>
-      <label>ページタイトル</label>
-      <input id="pageTitle" type="text" value="モバイルダッシュボード" oninput="syncFromUI()" />
-
-      <label>サブテキスト（任意）</label>
-      <input id="pageSub" type="text" value="すぐ下でカテゴリを切替" oninput="syncFromUI()" />
-
-      <div class="row">
-        <div class="col">
-          <label>ナビ色1</label>
-          <input id="navColor1" type="color" value="#111111" oninput="syncFromUI()" />
-        </div>
-        <div class="col">
-          <label>ナビ色2</label>
-          <input id="navColor2" type="color" value="#111111" oninput="syncFromUI()" />
-        </div>
-        <div class="col" style="padding-top:22px;">
-          <label style="display:flex; gap:8px; align-items:center; margin:0;">
-            <input id="useGrad" type="checkbox" onchange="syncFromUI()" />
-            グラデ
-          </label>
-        </div>
-      </div>
-
-      <div class="row" style="margin-top:6px;">
-        <div class="col">
-          <label>タブ数</label>
-          <select id="tabCount" onchange="applyTabCount()">
-            <option value="2">2</option>
-            <option value="3" selected>3</option>
-          </select>
-        </div>
-        <div class="col">
-          <label>グリッド列数</label>
-          <select id="gridCols" onchange="syncFromUI()">
-            <option value="2" selected>2列（おすすめ）</option>
-            <option value="3">3列（密）</option>
-          </select>
-        </div>
-        <div class="col">
-          <label>カード角丸</label>
-          <input id="cardRadius" type="number" min="6" max="24" value="12" oninput="syncFromUI()" />
-        </div>
-      </div>
-
-      <div class="hint">タブ数(2/3)は「選択肢」そのもの。グリッドは各タブの中身がカルーセルで切り替わる。</div>
-    </div>
-
-    <div class="section">
-      <h2>タブ選択（編集対象）</h2>
-      <div class="seg" id="tabSeg"></div>
-
-      <label style="margin-top:12px;">タブ名</label>
-      <input id="tabName" type="text" value="" oninput="renameTab()" />
-
-      <div class="hint">スマホ側：このタブをタップするとカルーセル移動します。</div>
-    </div>
-
-    <div class="section">
-      <h2>グリッドアイテム</h2>
-      <div class="btnRow">
-        <button class="primary" onclick="addItem()">＋追加</button>
-        <button onclick="duplicateItem()" title="選択中のアイテムを複製">複製</button>
-      </div>
-
-      <label style="margin-top:12px;">一覧</label>
-      <div class="itemList" id="itemList"></div>
-
-      <div class="hint">↑↓で並べ替え可。削除はゴミ箱。</div>
-    </div>
-
-    <div class="section" id="editSection" style="display:none;">
-      <h2>アイテム編集</h2>
-
-      <div class="row">
-        <div class="col">
-          <label>絵文字アイコン</label>
-          <input id="itEmoji" type="text" value="📦" oninput="updateItem()" />
-        </div>
-        <div class="col">
-          <label>画像URL（任意）</label>
-          <input id="itImg" type="url" placeholder="https://..." oninput="updateItem()" />
-        </div>
-      </div>
-
-      <label>タイトル（Markdown可）</label>
-      <input id="itTitle" type="text" value="" oninput="updateItem()" />
-
-      <label>説明（Markdown可）</label>
-      <textarea id="itDesc" oninput="updateItem()"></textarea>
-
-      <div class="row">
-        <div class="col">
-          <label>リンク（任意）</label>
-          <input id="itLink" type="url" placeholder="https://..." oninput="updateItem()" />
-        </div>
-        <div class="col">
-          <label>バッジ（カンマ区切り）</label>
-          <input id="itBadges" type="text" placeholder="NEW,人気,作業中" oninput="updateItem()" />
-        </div>
-      </div>
-
-      <div class="btnRow">
-        <button class="danger" onclick="deleteItem()">🗑️ 削除</button>
-      </div>
-
-      <div class="mdTitle">Markdownプレビュー</div>
-      <div class="mdBox md-render" id="mdPreview">（ここにプレビュー）</div>
-
-      <div class="hint">安全のため HTML 直書きは除去されます（DOMPurify）。</div>
-    </div>
-  </aside>
-
-  <main class="right">
-    <div class="topBar">
-      <h3>プレビュー</h3>
-      <div class="row" style="gap:10px;">
-        <button class="small" onclick="refresh()">🔄 更新</button>
-        <button class="small" onclick="toggleSwipeHint()">👆 スワイプ</button>
-      </div>
-    </div>
-
-    <div class="previewWrap">
-      <div class="phone">
-        <div class="mRoot" id="previewRoot"></div>
-      </div>
-    </div>
-  </main>
-
-<script>
-  // ===== Data =====
-  let data = {
-    pageTitle: "モバイルダッシュボード",
-    pageSub: "すぐ下でカテゴリを切替",
-    navColor1: "#111111",
-    navColor2: "#111111",
-    useGrad: false,
-    tabCount: 3,
-    gridCols: 2,
-    cardRadius: 12,
-    tabs: [
-      { name:"ホーム", items:[
-        { emoji:"📊", img:"", title:"**統計**", desc:"- 今日の閲覧数\n- 週次推移", link:"", badges:["NEW"] },
-        { emoji:"✅", img:"", title:"タスク", desc:"未完了: **12件**", link:"", badges:["作業中"] },
-        { emoji:"📦", img:"", title:"配送", desc:"発送状況をチェック", link:"", badges:[] },
-        { emoji:"🛠️", img:"", title:"ツール", desc:"よく使う機能", link:"", badges:["人気"] },
-      ]},
-      { name:"作業", items:[
-        { emoji:"🧠", img:"", title:"メモ", desc:"思考のログを残す", link:"", badges:[] },
-        { emoji:"🎬", img:"", title:"制作", desc:"動画/画像の進捗", link:"", badges:["HOT"] },
-        { emoji:"🗂️", img:"", title:"素材", desc:"フォルダ整理", link:"", badges:[] },
-        { emoji:"📅", img:"", title:"予定", desc:"今週の段取り", link:"", badges:[] },
-      ]},
-      { name:"設定", items:[
-        { emoji:"👤", img:"", title:"プロフィール", desc:"アカウント情報", link:"", badges:[] },
-        { emoji:"🔐", img:"", title:"セキュリティ", desc:"パスワード変更", link:"", badges:[] },
-        { emoji:"🔔", img:"", title:"通知", desc:"オン/オフ", link:"", badges:[] },
-        { emoji:"🌙", img:"", title:"テーマ", desc:"ダークモード", link:"", badges:["β"] },
-      ]},
-    ]
-  };
-
-  let currentTab = 0;
-  let currentItem = -1;
-
-  // ===== Markdown =====
-  function escapeHtml(s){
-    return (s||"")
-      .replace(/&/g,"&amp;")
-      .replace(/</g,"&lt;")
-      .replace(/>/g,"&gt;")
-      .replace(/"/g,"&quot;")
-      .replace(/'/g,"&#39;");
-  }
-  function md(s){
-    const t = (s==null) ? "" : String(s);
-    try{
-      if(window.marked && window.DOMPurify){
-        return DOMPurify.sanitize(marked.parse(t));
-      }
-    }catch(e){}
-    return escapeHtml(t).replace(/\n/g,"<br>");
-  }
-
-  // ===== UI Sync =====
-  function loadUI(){
-    pageTitle.value = data.pageTitle;
-    pageSub.value = data.pageSub;
-    navColor1.value = data.navColor1;
-    navColor2.value = data.navColor2;
-    useGrad.checked = !!data.useGrad;
-    tabCount.value = String(data.tabCount);
-    gridCols.value = String(data.gridCols);
-    cardRadius.value = String(data.cardRadius);
-
-    buildTabSeg();
-    tabName.value = data.tabs[currentTab]?.name || "";
-    buildItemList();
-    renderPreview();
-  }
-
-  function syncFromUI(){
-    data.pageTitle = pageTitle.value;
-    data.pageSub = pageSub.value;
-    data.navColor1 = navColor1.value;
-    data.navColor2 = navColor2.value;
-    data.useGrad = useGrad.checked;
-    data.tabCount = parseInt(tabCount.value,10);
-    data.gridCols = parseInt(gridCols.value,10);
-    data.cardRadius = clamp(parseInt(cardRadius.value,10)||12, 6, 24);
-    cardRadius.value = String(data.cardRadius);
-
-    // reflect count -> ensure tabs length
-    normalizeTabs();
-    buildTabSeg();
-    tabName.value = data.tabs[currentTab]?.name || "";
-    buildItemList();
-    renderPreview();
-  }
-
-  function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
-
-  function applyTabCount(){
-    data.tabCount = parseInt(tabCount.value,10);
-    normalizeTabs();
-    currentTab = Math.min(currentTab, data.tabs.length-1);
-    currentItem = -1;
-    hideEditor();
-    loadUI();
-  }
-
-  function normalizeTabs(){
-    const want = data.tabCount || 3;
-    while(data.tabs.length < want){
-      data.tabs.push({ name: `タブ${data.tabs.length+1}`, items: [] });
-    }
-    while(data.tabs.length > want){
-      data.tabs.pop();
-    }
-  }
-
-  // ===== Tab Segment =====
-  function buildTabSeg(){
-    const seg = document.getElementById("tabSeg");
-    seg.innerHTML = "";
-    data.tabs.forEach((t,i)=>{
-      const b = document.createElement("button");
-      b.textContent = `タブ${i+1}`;
-      b.className = (i===currentTab) ? "active" : "";
-      b.onclick = ()=>{ selectTab(i); };
-      seg.appendChild(b);
-    });
-  }
-  function selectTab(i){
-    currentTab = i;
-    currentItem = -1;
-    hideEditor();
-    tabName.value = data.tabs[currentTab].name;
-    buildTabSeg();
-    buildItemList();
-    renderPreview();
-  }
-  function renameTab(){
-    data.tabs[currentTab].name = tabName.value || `タブ${currentTab+1}`;
-    renderPreview();
-  }
-
-  // ===== Items =====
-  function buildItemList(){
-    const list = document.getElementById("itemList");
-    list.innerHTML = "";
-
-    const items = data.tabs[currentTab].items;
-    items.forEach((it, idx)=>{
-      const card = document.createElement("div");
-      card.className = "itemCard" + (idx===currentItem ? " selected":"");
-      card.onclick = ()=> selectItem(idx);
-
-      const top = document.createElement("div");
-      top.className = "itemTop";
-
-      const left = document.createElement("div");
-      left.style.display = "flex";
-      left.style.flexDirection = "column";
-      left.style.gap = "2px";
-
-      const title = document.createElement("div");
-      title.className = "itemTitleMini";
-      title.textContent = `${it.emoji || "🧩"} ${stripMd(it.title || "（無題）")}`;
-
-      const desc = document.createElement("div");
-      desc.className = "miniMuted";
-      desc.textContent = stripMd((it.desc || "").replace(/\n/g," ")).slice(0,40);
-
-      left.appendChild(title);
-      left.appendChild(desc);
-
-      const btns = document.createElement("div");
-      btns.className = "miniBtns";
-      btns.innerHTML = `
-        <button class="small" title="上へ" ${idx===0 ? "disabled":""}>↑</button>
-        <button class="small" title="下へ" ${idx===items.length-1 ? "disabled":""}>↓</button>
-        <button class="small" title="削除">🗑️</button>
-      `;
-
-      const [up, down, del] = btns.querySelectorAll("button");
-      up.onclick = (e)=>{ e.stopPropagation(); moveItem(idx,-1); };
-      down.onclick = (e)=>{ e.stopPropagation(); moveItem(idx, +1); };
-      del.onclick = (e)=>{ e.stopPropagation(); deleteItem(idx); };
-
-      top.appendChild(left);
-      top.appendChild(btns);
-
-      const meta = document.createElement("div");
-      meta.style.marginTop = "8px";
-      meta.style.display = "flex";
-      meta.style.gap = "8px";
-      meta.style.flexWrap = "wrap";
-
-      if(it.link) meta.innerHTML += `<span class="pill">🔗 link</span>`;
-      if((it.badges||[]).length) meta.innerHTML += `<span class="pill">🏷️ ${(it.badges||[]).length}</span>`;
-      if(it.img) meta.innerHTML += `<span class="pill">🖼️ img</span>`;
-
-      card.appendChild(top);
-      card.appendChild(meta);
-      list.appendChild(card);
-    });
-  }
-
-  function stripMd(s){
-    return (s||"")
-      .replace(/`{1,3}[\s\S]*?`{1,3}/g,"")
-      .replace(/\*\*|__|\*|_/g,"")
-      .replace(/\[([^\]]+)\]\([^)]+\)/g,"$1")
-      .replace(/#+\s?/g,"")
-      .trim();
-  }
-
-  function addItem(){
-    const it = { emoji:"📝", img:"", title:"新しいアイテム", desc:"説明を入力", link:"", badges:[] };
-    data.tabs[currentTab].items.push(it);
-    buildItemList();
-    renderPreview();
-    selectItem(data.tabs[currentTab].items.length-1);
-  }
-
-  function duplicateItem(){
-    if(currentItem<0) return;
-    const it = data.tabs[currentTab].items[currentItem];
-    const copy = JSON.parse(JSON.stringify(it));
-    data.tabs[currentTab].items.splice(currentItem+1, 0, copy);
-    buildItemList();
-    renderPreview();
-    selectItem(currentItem+1);
-  }
-
-  function selectItem(idx){
-    currentItem = idx;
-    const it = data.tabs[currentTab].items[idx];
-    editSection.style.display = "block";
-
-    itEmoji.value = it.emoji || "";
-    itImg.value = it.img || "";
-    itTitle.value = it.title || "";
-    itDesc.value = it.desc || "";
-    itLink.value = it.link || "";
-    itBadges.value = (it.badges || []).join(",");
-
-    buildItemList();
-    updateMdPreview();
-  }
-
-  function hideEditor(){
-    editSection.style.display = "none";
-    currentItem = -1;
-  }
-
-  function updateItem(){
-    if(currentItem<0) return;
-    const it = data.tabs[currentTab].items[currentItem];
-    it.emoji = itEmoji.value || "🧩";
-    it.img = itImg.value || "";
-    it.title = itTitle.value || "（無題）";
-    it.desc = itDesc.value || "";
-    it.link = itLink.value || "";
-    it.badges = (itBadges.value || "")
-      .split(",")
-      .map(s=>s.trim())
-      .filter(Boolean)
-      .slice(0, 10);
-
-    buildItemList();
-    updateMdPreview();
-    renderPreview();
-  }
-
-  function updateMdPreview(){
-    if(currentItem<0) return;
-    const it = data.tabs[currentTab].items[currentItem];
-    const box = document.getElementById("mdPreview");
-    const text = (it.title ? `### ${it.title}\n\n` : "") + (it.desc || "");
-    box.innerHTML = md(text);
-  }
-
-  function deleteItem(idx){
-    const items = data.tabs[currentTab].items;
-    if(idx==null){
-      if(currentItem<0) return;
-      idx = currentItem;
-    }
-    const name = stripMd(items[idx]?.title || "このアイテム");
-    if(!confirm(`「${name}」を削除しますか？`)) return;
-
-    items.splice(idx,1);
-    if(currentItem===idx) hideEditor();
-    else if(currentItem>idx) currentItem--;
-
-    buildItemList();
-    renderPreview();
-  }
-
-  function moveItem(idx, dir){
-    const items = data.tabs[currentTab].items;
-    const j = idx + dir;
-    if(j<0 || j>=items.length) return;
-    [items[idx], items[j]] = [items[j], items[idx]];
-    if(currentItem===idx) currentItem=j;
-    else if(currentItem===j) currentItem=idx;
-    buildItemList();
-    renderPreview();
-  }
-
-  // ===== Preview Render =====
-  function navBg(){
-    return data.useGrad
-      ? `linear-gradient(135deg, ${data.navColor1} 0%, ${data.navColor2} 100%)`
-      : data.navColor1;
-  }
-
-  function renderPreview(){
-    const root = document.getElementById("previewRoot");
-    root.innerHTML = "";
-
-    // Nav
-    const nav = document.createElement("div");
-    nav.className = "mNav";
-    nav.style.background = navBg();
-    nav.innerHTML = `
-      <div>
-        <h1>${escapeHtml(data.pageTitle || "")}</h1>
-        <div class="sub">${escapeHtml(data.pageSub || "")}</div>
-      </div>
-      <div class="footNote"></div>
-    `;
-
-    // Tabs
-    const tabs = document.createElement("div");
-    tabs.className = "mTabs";
-
-    data.tabs.forEach((t, i)=>{
-      const b = document.createElement("button");
-      b.className = "mTabBtn" + (i===currentTab ? " active":"");
-      b.textContent = t.name || `タブ${i+1}`;
-      b.onclick = ()=> switchTab(i);
-      tabs.appendChild(b);
-    });
-
-    // Carousel
-    const content = document.createElement("div");
-    content.className = "mContent";
-
-    const car = document.createElement("div");
-    car.className = "mCarousel";
-    car.id = "mCarousel";
-
-    data.tabs.forEach((t, i)=>{
-      const slide = document.createElement("div");
-      slide.className = "mSlide";
-      const grid = document.createElement("div");
-      grid.className = "mGrid " + (data.gridCols===3 ? "grid3" : "grid2");
-      grid.style.setProperty("--radius", data.cardRadius + "px");
-
-      (t.items||[]).forEach((it)=>{
-        const card = document.createElement("div");
-        card.className = "mCard";
-        card.style.borderRadius = data.cardRadius + "px";
-
-        const icon = it.img
-          ? `<div class="mIcon"><img src="${escapeHtml(it.img)}" onerror="this.closest('.mIcon').style.display='none'"></div>`
-          : `<div class="mIcon">${escapeHtml(it.emoji || "🧩")}</div>`;
-
-        const badges = (it.badges||[]).map(b=>`<span class="mBadge">${escapeHtml(b)}</span>`).join("");
-
-        card.innerHTML = `
-          <div class="mCardTop">
-            ${icon}
-            <div style="min-width:0">
-              <div class="mTitle md-render">${md(it.title || "")}</div>
-              <div class="mDesc md-render">${md(it.desc || "")}</div>
-            </div>
-          </div>
-          ${badges ? `<div class="mBadgeRow">${badges}</div>` : ""}
-        `;
-
-        card.onclick = ()=>{
-          if(it.link){
-            window.open(it.link, "_blank");
-          }else{
-            alert(`「${stripMd(it.title||"アイテム")}」がタップされました`);
-          }
-        };
-
-        grid.appendChild(card);
-      });
-
-      slide.appendChild(grid);
-      car.appendChild(slide);
-    });
-
-    content.appendChild(car);
-
-    root.appendChild(nav);
-    root.appendChild(tabs);
-    root.appendChild(content);
-
-    // Position
-    applyCarouselPos();
-    attachSwipe(content);
-  }
-
-  function switchTab(i){
-    currentTab = i;
-    buildTabSeg();
-    tabName.value = data.tabs[currentTab].name || "";
-    buildItemList();
-    hideEditor();
-    renderPreview();
-  }
-
-  function applyCarouselPos(){
-    const car = document.getElementById("mCarousel");
-    if(!car) return;
-    car.style.transform = `translateX(-${currentTab*100}%)`;
-  }
-
-  // ===== Swipe =====
-  let swipeBound = false;
-  let swipeHintOn = false;
-
-  function attachSwipe(area){
-    if(swipeBound) return;
-    swipeBound = true;
-
-    let startX=0, startY=0, dx=0, dragging=false;
-    area.addEventListener("touchstart",(e)=>{
-      if(!e.touches?.length) return;
-      startX = e.touches[0].clientX;
-      startY = e.touches[0].clientY;
-      dx = 0;
-      dragging = true;
-    }, {passive:true});
-
-    area.addEventListener("touchmove",(e)=>{
-      if(!dragging || !e.touches?.length) return;
-      dx = e.touches[0].clientX - startX;
-      const dy = e.touches[0].clientY - startY;
-      if(Math.abs(dy) > Math.abs(dx)) return; // vertical scroll priority
-      // optional: small follow
-      const car = document.getElementById("mCarousel");
-      if(car){
-        car.style.transition = "none";
-        const base = -currentTab * 100;
-        const follow = (dx / area.clientWidth) * 100;
-        car.style.transform = `translateX(${base + follow}%)`;
-      }
-    }, {passive:true});
-
-    area.addEventListener("touchend",()=>{
-      if(!dragging) return;
-      dragging = false;
-
-      const car = document.getElementById("mCarousel");
-      if(car) car.style.transition = "transform .34s cubic-bezier(.2,.8,.2,1)";
-
-      if(Math.abs(dx) > 50){
-        if(dx < 0 && currentTab < data.tabs.length-1) currentTab++;
-        if(dx > 0 && currentTab > 0) currentTab--;
-      }
-      renderPreview();
-    }, {passive:true});
-  }
-
-  function toggleSwipeHint(){
-    swipeHintOn = !swipeHintOn;
-    alert(swipeHintOn
-      ? "スマホでは左右スワイプでもタブ移動します（縦スクロール優先）。"
-      : "OK");
-  }
-
-  // ===== Project IO =====
-  function saveJSON(){
-    const blob = new Blob([JSON.stringify(data,null,2)], {type:"application/json"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "nav-carousel-project.json";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function triggerLoad(){
-    document.getElementById("loadFile").click();
-  }
-
-  function handleLoad(ev){
-    const f = ev.target.files?.[0];
-    if(!f) return;
-    const r = new FileReader();
-    r.onload = ()=>{
-      try{
-        const obj = JSON.parse(r.result);
-        // light validate
-        if(!obj || !Array.isArray(obj.tabs)) throw new Error("invalid");
-        data = obj;
-
-        // normalize missing defaults
-        if(!data.pageTitle) data.pageTitle = "モバイルダッシュボード";
-        if(!("useGrad" in data)) data.useGrad = false;
-        if(!data.tabCount) data.tabCount = data.tabs.length;
-        if(!data.gridCols) data.gridCols = 2;
-        if(!data.cardRadius) data.cardRadius = 12;
-
-        normalizeTabs();
-        currentTab = 0;
-        currentItem = -1;
-        hideEditor();
-        loadUI();
-        alert("✅ 読込しました");
-      }catch(e){
-        alert("❌ JSONが壊れてるか形式が違います");
-      }
-    };
-    r.readAsText(f);
-    ev.target.value = "";
-  }
-
-  function resetProject(){
-    if(!confirm("新規にします（今の編集は消えます）。OK？")) return;
-    data = {
-      pageTitle: "モバイルダッシュボード",
-      pageSub: "すぐ下でカテゴリを切替",
-      navColor1: "#111111",
-      navColor2: "#111111",
-      useGrad: false,
-      tabCount: 3,
-      gridCols: 2,
-      cardRadius: 12,
-      tabs: [
-        { name:"ホーム", items:[] },
-        { name:"作業", items:[] },
-        { name:"設定", items:[] },
-      ]
-    };
-    currentTab = 0;
-    currentItem = -1;
-    hideEditor();
-    loadUI();
-  }
-
-  // ===== Export =====
-  function exportHTML(){
-    // export page uses pre-rendered markdown at runtime for flexibility
-    const safeData = JSON.stringify(data);
-
-    const tpl = `<!doctype html>
-<html lang="ja">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>${escapeHtml(data.pageTitle)}</title>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"><\/script>
-<script src="https://cdn.jsdelivr.net/npm/dompurify/dist/purify.min.js"><\/script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobile Page Editor</title>
 <style>
-  :root{
-    --bg:#f6f7f9;
-    --navH:56px;
-    --tabH:48px;
-    --line:rgba(0,0,0,.10);
+  :root {
+    --bg: #111827; --bg2: #1f2937; --bg3: #374151;
+    --border: #4b5563; --text: #f3f4f6; --text2: #9ca3af;
+    --blue: #3b82f6; --green: #10b981; --red: #ef4444;
   }
-  *{box-sizing:border-box}
-  body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial;background:var(--bg);color:#111}
-  .nav{
-    height:var(--navH);
-    padding:14px 16px 12px;
-    color:#fff;
-    display:flex;
-    align-items:flex-end;
-    justify-content:space-between;
-    position:sticky;
-    top:0;
-    z-index:3;
-  }
-  .nav h1{margin:0;font-size:18px;font-weight:900}
-  .nav .sub{font-size:12px;opacity:.9;margin-top:2px}
-  .tabs{
-    height:var(--tabH);
-    background:#fff;
-    border-bottom:1px solid rgba(0,0,0,.06);
-    display:flex;
-    position:sticky;
-    top:var(--navH);
-    z-index:2;
-  }
-  .tabBtn{
-    flex:1;border:0;background:transparent;
-    font-size:13px;font-weight:900;letter-spacing:.04em;
-    color:#6b7280;position:relative;
-  }
-  .tabBtn.active{color:#111}
-  .tabBtn.active::after{
-    content:"";position:absolute;left:12px;right:12px;bottom:0;height:3px;border-radius:999px;background:#111
-  }
-  .content{height:calc(100vh - var(--navH) - var(--tabH));overflow:hidden}
-  .carousel{height:100%;display:flex;transition:transform .34s cubic-bezier(.2,.8,.2,1);will-change:transform}
-  .slide{min-width:100%;height:100%;overflow:auto;padding:14px 14px 18px}
-  .grid{display:grid;gap:12px}
-  .grid2{grid-template-columns:repeat(2,1fr)}
-  .grid3{grid-template-columns:repeat(3,1fr)}
-  .card{
-    background:#fff;border:1px solid rgba(0,0,0,.08);
-    padding:12px;box-shadow:0 6px 18px rgba(0,0,0,.04);
-    display:flex;flex-direction:column;gap:8px;cursor:pointer;overflow:hidden;
-  }
-  .card:active{transform:scale(.985)}
-  .top{display:flex;gap:10px;align-items:center}
-  .icon{
-    width:40px;height:40px;border-radius:12px;
-    display:flex;align-items:center;justify-content:center;font-size:22px;
-    background:rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.06);
-    overflow:hidden;flex:0 0 auto;
-  }
-  .icon img{width:100%;height:100%;object-fit:cover}
-  .title{font-size:14px;font-weight:900;line-height:1.2}
-  .desc{font-size:12px;color:#6b7280;line-height:1.35}
-  .badges{display:flex;gap:6px;flex-wrap:wrap}
-  .badge{font-size:11px;border:1px solid rgba(0,0,0,.08);background:rgba(0,0,0,.03);padding:4px 8px;border-radius:999px;font-weight:800}
-  /* md */
-  .md-render p{margin:0 0 .55em 0}
-  .md-render p:last-child{margin-bottom:0}
-  .md-render ul,.md-render ol{margin:.25em 0 .6em 1.2em;padding:0}
-  .md-render li{margin:.12em 0}
-  .md-render a{color:inherit;text-decoration:underline;text-underline-offset:2px}
-  .md-render code{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;font-size:.95em;background:rgba(0,0,0,.06);padding:.1em .25em;border-radius:8px}
-  .md-render pre{background:rgba(0,0,0,.06);padding:10px;border-radius:12px;overflow:auto;margin:.4em 0}
-  .md-render pre code{background:transparent;padding:0}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Toolbar */
+  .toolbar { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; background: var(--bg2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .toolbar-title { font-size: 14px; font-weight: 700; color: var(--text2); }
+  .toolbar-title span { color: var(--blue); }
+  .toolbar-group { display: flex; gap: 6px; align-items: center; }
+  .view-toggle { display: flex; background: var(--bg3); border-radius: 6px; overflow: hidden; }
+  .view-btn { padding: 5px 12px; font-size: 12px; border: none; cursor: pointer; color: var(--text2); background: transparent; transition: all 0.2s; }
+  .view-btn.active { background: var(--blue); color: white; }
+  .btn { padding: 5px 12px; font-size: 12px; border: none; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-weight: 500; }
+  .btn-primary { background: var(--blue); color: white; }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-secondary { background: var(--bg3); color: var(--text2); }
+  .btn-secondary:hover { background: #4b5563; }
+
+  /* Layout */
+  .main { display: flex; flex: 1; overflow: hidden; }
+  .editor-pane { width: 50%; overflow-y: auto; padding: 16px; border-right: 1px solid var(--border); scrollbar-width: thin; }
+  .preview-pane { width: 50%; overflow-y: auto; background: #d1d5db; scrollbar-width: thin; }
+  .main.editor-only .editor-pane { width: 100%; }
+  .main.editor-only .preview-pane { display: none; }
+  .main.preview-only .editor-pane { display: none; }
+  .main.preview-only .preview-pane { width: 100%; }
+  .code-pane { flex: 1; overflow: auto; padding: 16px; }
+  .code-pane pre { font-family: 'Consolas', 'Monaco', monospace; font-size: 12px; color: #86efac; background: #030712; padding: 16px; border-radius: 8px; border: 1px solid var(--border); white-space: pre-wrap; line-height: 1.6; }
+
+  /* Editor components */
+  .section { margin-bottom: 16px; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .section-title { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 12px 0; }
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+  .field-label { font-size: 11px; color: var(--text2); }
+  .field-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .field-row .field-label { width: 80px; flex-shrink: 0; }
+  input[type="text"], textarea, select { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; color: var(--text); font-size: 13px; width: 100%; outline: none; }
+  input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--blue); }
+  textarea { resize: none; }
+  input[type="number"] { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; color: var(--text); font-size: 13px; outline: none; }
+  input[type="number"]:focus { border-color: var(--blue); }
+  input[type="color"] { width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 6px; cursor: pointer; background: transparent; padding: 2px; }
+  .color-val { font-size: 11px; color: var(--text2); font-family: monospace; }
+  .tabs-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+  .tab-btn { padding: 4px 12px; border-radius: 6px; border: none; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+  .tab-btn.sel-blue { background: var(--blue); color: white; }
+  .tab-btn.sel-green { background: var(--green); color: white; }
+  .tab-btn.default { background: var(--bg3); color: var(--text2); }
+  .tab-btn.default:hover { background: #4b5563; }
+  .small-btn { padding: 2px 8px; border-radius: 4px; border: none; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+  .small-btn.normal { background: var(--bg3); color: var(--text2); }
+  .small-btn.normal:hover { background: #4b5563; }
+  .small-btn.danger { background: #7f1d1d; color: #fca5a5; }
+  .small-btn.danger:hover { background: #991b1b; }
+  .small-btn.add { background: var(--bg3); color: var(--text2); }
+  .list-item-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 6px; }
+  .list-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .list-item-num { font-size: 11px; color: var(--text2); font-family: monospace; }
+  .list-item-actions { display: flex; gap: 4px; }
+  .empty-msg { font-size: 12px; color: var(--text2); font-style: italic; }
+
+  /* Preview */
+  .preview-frame { max-width: 420px; margin: 0 auto; background: #e5e7eb; min-height: 100%; box-shadow: 0 25px 50px rgba(0,0,0,0.3); font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; }
+  .pv-header { display: flex; justify-content: center; align-items: flex-end; padding-bottom: 30px; height: 280px; }
+  .pv-title { writing-mode: vertical-rl; letter-spacing: 0.1em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); transition: opacity 0.3s; }
+  .pv-main-tabs { display: flex; background: white; border-bottom: 2px solid #e0e0e0; }
+  .pv-main-tab { flex: 1; padding: 12px; text-align: center; font-size: 16px; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; background: white; border-top: none; border-left: none; border-right: none; }
+  .pv-main-tab:hover { background: #f5f5f5; }
+  .pv-subtabs { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; background: white; border-bottom: 1px solid #f0f0f0; }
+  .pv-subtab { padding: 8px 20px; border-radius: 2px; font-size: 13px; white-space: nowrap; cursor: pointer; transition: all 0.3s; flex-shrink: 0; border: none; font-weight: 500; }
+  .pv-content { padding: 16px; background: white; }
+  .pv-card { border-radius: 12px; padding: 20px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .pv-card-title { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 6px; }
+  .pv-card-text { font-size: 14px; color: #555; line-height: 1.8; }
+  .pv-list-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+  .pv-list-item:last-child { border-bottom: none; }
+  .pv-list-title { font-size: 15px; font-weight: bold; color: #222; margin-bottom: 2px; }
+  .pv-list-sub { font-size: 13px; color: #555; }
+  .pv-list-arrow { color: #ccc; font-size: 22px; margin-left: 8px; }
+  .pv-indicators { display: flex; justify-content: center; padding: 16px; gap: 8px; background: white; }
+  .pv-indicator { border-radius: 50%; cursor: pointer; transition: all 0.3s; border: none; height: 8px; }
 </style>
 </head>
 <body>
-<div id="app"></div>
+
+<div class="toolbar">
+  <div class="toolbar-group">
+    <div class="toolbar-title"><span>Mobile</span> Page Editor</div>
+    <div class="view-toggle">
+      <button class="view-btn active" data-view="split">分割</button>
+      <button class="view-btn" data-view="editor">編集</button>
+      <button class="view-btn" data-view="preview">プレビュー</button>
+      <button class="view-btn" data-view="code">HTML</button>
+    </div>
+  </div>
+  <div class="toolbar-group">
+    <button class="btn btn-secondary" id="copyBtn">コピー</button>
+    <button class="btn btn-primary" id="dlBtn">ダウンロード</button>
+  </div>
+</div>
+
+<div class="main" id="mainArea">
+  <div class="editor-pane" id="editorPane"></div>
+  <div class="preview-pane" id="previewPane"></div>
+  <div class="code-pane" id="codePane" style="display:none"><pre id="codeOutput"></pre></div>
+</div>
+
 <script>
-  const data = ${safeData};
-
-  function escapeHtml(s){
-    return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-  }
-  function md(s){
-    const t = (s==null) ? "" : String(s);
-    try{
-      return DOMPurify.sanitize(marked.parse(t));
-    }catch(e){
-      return escapeHtml(t).replace(/\\n/g,"<br>");
+// ===== DATA =====
+let data = {
+  header: { 
+    title: "タイトル", 
+    gradientStart: "#333333", 
+    gradientEnd: "#666666", 
+    bgAngle: 135,
+    titleColor: "#ffffff",
+    titleFontSize: 48,
+    titleFontWeight: "bold"
+  },
+  accentColor: "#666666",
+  tabs: [
+    {
+      id: "t0", name: "タブ1", headerTitle: "タブ1タイトル",
+      subtabs: [
+        { id: "s0", name: "サブタブ1", card: { title: "カードタイトル", text: "カードの説明文がここに入ります。", colorStart: "#cccccc", colorEnd: "#aaaaaa" },
+          listItems: [{ id: "l0", title: "リスト項目1", subtitle: "2026年2月15日", url: "" }, { id: "l1", title: "リスト項目2", subtitle: "2026年2月20日", url: "" }] },
+        { id: "s1", name: "サブタブ2", card: { title: "カード2", text: "説明文2", colorStart: "#d0d0d0", colorEnd: "#b8b8b8" },
+          listItems: [{ id: "l2", title: "項目", subtitle: "詳細", url: "" }] }
+      ]
+    },
+    {
+      id: "t1", name: "タブ2", headerTitle: "タブ2タイトル",
+      subtabs: [
+        { id: "s2", name: "サブタブ", card: { title: "タイトル", text: "説明", colorStart: "#d0d0d0", colorEnd: "#b8b8b8" },
+          listItems: [{ id: "l3", title: "TOP3", subtitle: "閲覧数 15,234", url: "" }] }
+      ]
+    },
+    {
+      id: "t2", name: "タブ3", headerTitle: "タブ3タイトル",
+      subtabs: [
+        { id: "s3", name: "サブタブ", card: { title: "タイトル", text: "説明文", colorStart: "#c8c8c8", colorEnd: "#a0a0a0" },
+          listItems: [{ id: "l4", title: "項目A", subtitle: "詳細 / 補足", url: "" }, { id: "l5", title: "項目B", subtitle: "詳細情報", url: "" }] }
+      ]
     }
+  ]
+};
+
+let selTab = 0, selSubtab = 0, pvTab = 0, pvSubtabs = {};
+let _uid = 200;
+const uid = () => "id_" + (_uid++);
+
+// ===== VIEW TOGGLE =====
+let currentView = "split";
+document.querySelectorAll(".view-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".view-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    currentView = btn.dataset.view;
+    applyView();
+  });
+});
+
+function applyView() {
+  const m = document.getElementById("mainArea");
+  const ep = document.getElementById("editorPane");
+  const pp = document.getElementById("previewPane");
+  const cp = document.getElementById("codePane");
+  m.className = "main";
+  ep.style.display = ""; pp.style.display = ""; cp.style.display = "none";
+  if (currentView === "split") { /* default */ }
+  else if (currentView === "editor") { m.classList.add("editor-only"); }
+  else if (currentView === "preview") { m.classList.add("preview-only"); }
+  else if (currentView === "code") {
+    ep.style.display = "none"; pp.style.display = "none"; cp.style.display = "";
+    document.getElementById("codeOutput").textContent = generateHTML();
   }
-  function navBg(){
-    return data.useGrad
-      ? \`linear-gradient(135deg, \${data.navColor1} 0%, \${data.navColor2} 100%)\`
-      : data.navColor1;
-  }
+}
 
-  let currentTab = 0;
+// ===== RENDER EDITOR =====
+function renderEditor() {
+  const ep = document.getElementById("editorPane");
+  let h = "";
 
-  function render(){
-    const app = document.getElementById("app");
-    app.innerHTML = "";
+  // Header section
+  h += `<div class="section">
+    <div class="section-header"><div class="section-title">ヘッダー設定</div></div>
+    <div class="field"><div class="field-label">タイトル</div>
+      <input type="text" value="${esc(data.header.title)}" onchange="data.header.title=this.value;update()"></div>
+    <div class="field-row"><div class="field-label">文字色</div>
+      <input type="color" value="${data.header.titleColor}" onchange="data.header.titleColor=this.value;update()">
+      <span class="color-val">${data.header.titleColor}</span></div>
+    <div class="field-row"><div class="field-label">サイズ</div>
+      <input type="number" value="${data.header.titleFontSize}" min="12" max="120" style="width:70px" onchange="data.header.titleFontSize=parseInt(this.value)||48;update()">
+      <span class="color-val">px</span></div>
+    <div class="field-row"><div class="field-label">太さ</div>
+      <select style="width:auto" onchange="data.header.titleFontWeight=this.value;update()">
+        <option value="normal" ${data.header.titleFontWeight==='normal'?'selected':''}>普通 (normal)</option>
+        <option value="bold" ${data.header.titleFontWeight==='bold'?'selected':''}>太字 (bold)</option>
+        <option value="100" ${data.header.titleFontWeight==='100'?'selected':''}>100 (極細)</option>
+        <option value="200" ${data.header.titleFontWeight==='200'?'selected':''}>200</option>
+        <option value="300" ${data.header.titleFontWeight==='300'?'selected':''}>300 (細め)</option>
+        <option value="400" ${data.header.titleFontWeight==='400'?'selected':''}>400 (標準)</option>
+        <option value="500" ${data.header.titleFontWeight==='500'?'selected':''}>500 (中)</option>
+        <option value="600" ${data.header.titleFontWeight==='600'?'selected':''}>600 (やや太)</option>
+        <option value="700" ${data.header.titleFontWeight==='700'?'selected':''}>700 (太め)</option>
+        <option value="800" ${data.header.titleFontWeight==='800'?'selected':''}>800</option>
+        <option value="900" ${data.header.titleFontWeight==='900'?'selected':''}>900 (極太)</option>
+      </select></div>
+    <div class="field-row"><div class="field-label">背景開始色</div>
+      <input type="color" value="${data.header.gradientStart}" onchange="data.header.gradientStart=this.value;update()">
+      <span class="color-val">${data.header.gradientStart}</span></div>
+    <div class="field-row"><div class="field-label">背景終了色</div>
+      <input type="color" value="${data.header.gradientEnd}" onchange="data.header.gradientEnd=this.value;update()">
+      <span class="color-val">${data.header.gradientEnd}</span></div>
+    <div class="field-row"><div class="field-label">アクセント色</div>
+      <input type="color" value="${data.accentColor}" onchange="data.accentColor=this.value;update()">
+      <span class="color-val">${data.accentColor}</span></div>
+  </div><hr class="divider">`;
 
-    const nav = document.createElement("div");
-    nav.className = "nav";
-    nav.style.background = navBg();
-    nav.innerHTML = \`
-      <div>
-        <h1>\${escapeHtml(data.pageTitle||"")}</h1>
-        <div class="sub">\${escapeHtml(data.pageSub||"")}</div>
-      </div>\`;
+  // Main tabs
+  h += `<div class="section">
+    <div class="section-header"><div class="section-title">メインタブ</div>
+      <button class="small-btn add" onclick="addTab()">+ 追加</button></div>
+    <div class="tabs-row">${data.tabs.map((t, i) =>
+      `<button class="tab-btn ${i === selTab ? 'sel-blue' : 'default'}" onclick="selTab=${i};selSubtab=0;update()">${esc(t.name)}</button>`
+    ).join("")}</div></div>`;
 
-    const tabs = document.createElement("div");
-    tabs.className = "tabs";
+  const tab = data.tabs[selTab];
+  if (tab) {
+    h += `<div class="section">
+      <div class="section-header"><div class="section-title">${esc(tab.name)} の設定</div>
+        ${data.tabs.length > 1 ? `<button class="small-btn danger" onclick="removeTab(${selTab})">削除</button>` : ""}</div>
+      <div class="field"><div class="field-label">タブ名</div>
+        <input type="text" value="${esc(tab.name)}" onchange="data.tabs[${selTab}].name=this.value;update()"></div>
+      <div class="field"><div class="field-label">ヘッダータイトル</div>
+        <input type="text" value="${esc(tab.headerTitle)}" onchange="data.tabs[${selTab}].headerTitle=this.value;update()"></div>
+    </div><hr class="divider">`;
 
-    (data.tabs||[]).forEach((t,i)=>{
-      const b = document.createElement("button");
-      b.className = "tabBtn" + (i===currentTab ? " active":"");
-      b.textContent = t.name || \`タブ\${i+1}\`;
-      b.onclick = ()=>{ currentTab=i; render(); };
-      tabs.appendChild(b);
-    });
+    // Subtabs
+    h += `<div class="section">
+      <div class="section-header"><div class="section-title">サブタブ</div>
+        <button class="small-btn add" onclick="addSubtab(${selTab})">+ 追加</button></div>
+      <div class="tabs-row">${tab.subtabs.map((st, i) =>
+        `<button class="tab-btn ${i === selSubtab ? 'sel-green' : 'default'}" onclick="selSubtab=${i};update()">${esc(st.name)}</button>`
+      ).join("")}</div></div>`;
 
-    const content = document.createElement("div");
-    content.className = "content";
+    const st = tab.subtabs[selSubtab];
+    if (st) {
+      h += `<div class="section">
+        <div class="section-header"><div class="section-title">${esc(st.name)} の設定</div>
+          ${tab.subtabs.length > 1 ? `<button class="small-btn danger" onclick="removeSubtab(${selTab},${selSubtab})">削除</button>` : ""}</div>
+        <div class="field"><div class="field-label">サブタブ名</div>
+          <input type="text" value="${esc(st.name)}" onchange="data.tabs[${selTab}].subtabs[${selSubtab}].name=this.value;update()"></div>
+      </div><hr class="divider">`;
 
-    const car = document.createElement("div");
-    car.className = "carousel";
-    car.style.transform = \`translateX(-\${currentTab*100}%)\`;
+      // Card
+      h += `<div class="section">
+        <div class="section-header"><div class="section-title">カード設定</div></div>
+        <div class="field"><div class="field-label">カードタイトル</div>
+          <input type="text" value="${esc(st.card.title)}" onchange="data.tabs[${selTab}].subtabs[${selSubtab}].card.title=this.value;update()"></div>
+        <div class="field"><div class="field-label">カード説明文</div>
+          <textarea rows="2" onchange="data.tabs[${selTab}].subtabs[${selSubtab}].card.text=this.value;update()">${esc(st.card.text)}</textarea></div>
+        <div class="field-row"><div class="field-label">カード開始色</div>
+          <input type="color" value="${st.card.colorStart}" onchange="data.tabs[${selTab}].subtabs[${selSubtab}].card.colorStart=this.value;update()">
+          <span class="color-val">${st.card.colorStart}</span></div>
+        <div class="field-row"><div class="field-label">カード終了色</div>
+          <input type="color" value="${st.card.colorEnd}" onchange="data.tabs[${selTab}].subtabs[${selSubtab}].card.colorEnd=this.value;update()">
+          <span class="color-val">${st.card.colorEnd}</span></div>
+      </div><hr class="divider">`;
 
-    (data.tabs||[]).forEach((t)=>{
-      const slide = document.createElement("div");
-      slide.className = "slide";
-
-      const grid = document.createElement("div");
-      grid.className = "grid " + (data.gridCols===3 ? "grid3":"grid2");
-
-      (t.items||[]).forEach((it)=>{
-        const card = document.createElement("div");
-        card.className = "card";
-        card.style.borderRadius = (data.cardRadius||12) + "px";
-
-        const icon = it.img
-          ? \`<div class="icon"><img src="\${escapeHtml(it.img)}" onerror="this.closest('.icon').style.display='none'"></div>\`
-          : \`<div class="icon">\${escapeHtml(it.emoji||"🧩")}</div>\`;
-
-        const badges = (it.badges||[]).map(b=>\`<span class="badge">\${escapeHtml(b)}</span>\`).join("");
-
-        card.innerHTML = \`
-          <div class="top">
-            \${icon}
-            <div style="min-width:0">
-              <div class="title md-render">\${md(it.title||"")}</div>
-              <div class="desc md-render">\${md(it.desc||"")}</div>
+      // List items
+      h += `<div class="section">
+        <div class="section-header"><div class="section-title">リスト項目</div>
+          <button class="small-btn add" onclick="addListItem(${selTab},${selSubtab})">+ 追加</button></div>`;
+      if (st.listItems.length === 0) {
+        h += `<div class="empty-msg">リスト項目がありません</div>`;
+      }
+      st.listItems.forEach((item, li) => {
+        h += `<div class="list-item-card">
+          <div class="list-item-header">
+            <span class="list-item-num">#${li + 1}</span>
+            <div class="list-item-actions">
+              <button class="small-btn normal" onclick="moveItem(${selTab},${selSubtab},${li},-1)">↑</button>
+              <button class="small-btn normal" onclick="moveItem(${selTab},${selSubtab},${li},1)">↓</button>
+              <button class="small-btn danger" onclick="removeListItem(${selTab},${selSubtab},${li})">削除</button>
             </div>
           </div>
-          \${badges ? \`<div class="badges">\${badges}</div>\` : ""}
-        \`;
-
-        card.onclick = ()=>{
-          if(it.link) window.open(it.link,"_blank");
-        };
-
-        grid.appendChild(card);
+          <div class="field"><div class="field-label">タイトル</div>
+            <input type="text" value="${esc(item.title)}" onchange="data.tabs[${selTab}].subtabs[${selSubtab}].listItems[${li}].title=this.value;update()"></div>
+          <div class="field"><div class="field-label">サブタイトル</div>
+            <input type="text" value="${esc(item.subtitle)}" onchange="data.tabs[${selTab}].subtabs[${selSubtab}].listItems[${li}].subtitle=this.value;update()"></div>
+          <div class="field"><div class="field-label">URL</div>
+            <div style="display:flex;gap:6px;align-items:center">
+              <input type="text" value="${esc(item.url||'')}" placeholder="https://example.com" onchange="data.tabs[${selTab}].subtabs[${selSubtab}].listItems[${li}].url=this.value;update()" style="flex:1">
+              ${item.url ? '<span style="color:#10b981;font-size:11px">✓ リンク設定済</span>' : ''}
+            </div></div>
+        </div>`;
       });
-
-      slide.appendChild(grid);
-      car.appendChild(slide);
-    });
-
-    content.appendChild(car);
-
-    app.appendChild(nav);
-    app.appendChild(tabs);
-    app.appendChild(content);
-
-    attachSwipe(content);
+      h += `</div>`;
+    }
   }
+  ep.innerHTML = h;
+}
 
-  let swipeBound=false;
-  function attachSwipe(area){
-    if(swipeBound) return;
-    swipeBound=true;
+// ===== RENDER PREVIEW =====
+function renderPreview() {
+  const pp = document.getElementById("previewPane");
+  const tab = data.tabs[pvTab];
+  const accent = data.accentColor;
+  const pvSt = pvSubtabs[pvTab] || 0;
 
-    let startX=0,startY=0,dx=0,drag=false;
-    area.addEventListener("touchstart",(e)=>{
-      startX=e.touches[0].clientX;
-      startY=e.touches[0].clientY;
-      dx=0; drag=true;
-    },{passive:true});
+  let h = `<div class="preview-frame">`;
+  // Header with dynamic title styles
+  h += `<div class="pv-header" style="background:linear-gradient(${data.header.bgAngle}deg,${data.header.gradientStart},${data.header.gradientEnd})">
+    <div class="pv-title" style="color:${data.header.titleColor};font-size:${data.header.titleFontSize}px;font-weight:${data.header.titleFontWeight}">${esc(tab ? tab.headerTitle : data.header.title)}</div></div>`;
+  // Main tabs
+  h += `<div class="pv-main-tabs">${data.tabs.map((t, i) =>
+    `<button class="pv-main-tab" style="border-bottom-color:${i === pvTab ? accent : 'transparent'};color:${i === pvTab ? accent : '#999'};background:${i === pvTab ? '#f9f9ff' : 'white'}" onclick="pvTab=${i};update()">${esc(t.name)}</button>`
+  ).join("")}</div>`;
 
-    area.addEventListener("touchmove",(e)=>{
-      if(!drag) return;
-      dx=e.touches[0].clientX-startX;
-      const dy=e.touches[0].clientY-startY;
-      if(Math.abs(dy) > Math.abs(dx)) return;
-      const car=document.querySelector(".carousel");
-      if(car){
-        car.style.transition="none";
-        const base=-currentTab*100;
-        const follow=(dx/area.clientWidth)*100;
-        car.style.transform=\`translateX(\${base+follow}%)\`;
-      }
-    },{passive:true});
+  if (tab) {
+    const st = tab.subtabs[pvSt];
+    // Subtabs
+    h += `<div class="pv-subtabs">${tab.subtabs.map((s, i) =>
+      `<button class="pv-subtab" style="background:${i === pvSt ? accent : '#f0f0f0'};color:${i === pvSt ? 'white' : '#666'};${i === pvSt ? 'box-shadow:0 2px 8px ' + accent + '4d' : ''}" onclick="pvSubtabs[${pvTab}]=${i};update()">${esc(s.name)}</button>`
+    ).join("")}</div>`;
 
-    area.addEventListener("touchend",()=>{
-      if(!drag) return;
-      drag=false;
-      const car=document.querySelector(".carousel");
-      if(car) car.style.transition="transform .34s cubic-bezier(.2,.8,.2,1)";
-      if(Math.abs(dx)>50){
-        if(dx<0 && currentTab < (data.tabs.length-1)) currentTab++;
-        if(dx>0 && currentTab>0) currentTab--;
-      }
-      render();
-    },{passive:true});
+    if (st) {
+      h += `<div class="pv-content">
+        <div class="pv-card" style="background:linear-gradient(135deg,${st.card.colorStart},${st.card.colorEnd})">
+          <div class="pv-card-title">${esc(st.card.title)}</div>
+          <div class="pv-card-text">${esc(st.card.text)}</div></div>
+        <div>`;
+      st.listItems.forEach((item, i) => {
+        const hasUrl = item.url && item.url.trim();
+        h += `<div class="pv-list-item" style="${i < st.listItems.length - 1 ? 'border-bottom:1px solid #f0f0f0;' : ''}${hasUrl ? 'cursor:pointer;' : ''}">
+          <div style="flex:1"><div class="pv-list-title">${esc(item.title)}${hasUrl ? ' <span style="font-size:12px;color:#3b82f6">🔗</span>' : ''}</div><div class="pv-list-sub">${esc(item.subtitle)}</div></div>
+          <span class="pv-list-arrow">›</span></div>`;
+      });
+      h += `</div></div>`;
+    }
+
+    // Indicators
+    h += `<div class="pv-indicators">${data.tabs.map((_, i) =>
+      `<button class="pv-indicator" style="width:${i === pvTab ? '24px' : '8px'};background:${i === pvTab ? accent : '#ddd'};border-radius:${i === pvTab ? '4px' : '50%'}" onclick="pvTab=${i};update()"></button>`
+    ).join("")}</div>`;
   }
+  h += `</div>`;
+  pp.innerHTML = h;
+}
 
-  render();
-<\/script>
+// ===== DATA OPERATIONS =====
+function addTab() {
+  data.tabs.push({ id: uid(), name: "タブ" + (data.tabs.length + 1), headerTitle: "新しいタブ",
+    subtabs: [{ id: uid(), name: "サブタブ", card: { title: "タイトル", text: "説明文", colorStart: "#cccccc", colorEnd: "#aaaaaa" }, listItems: [] }] });
+  update();
+}
+function removeTab(i) {
+  if (data.tabs.length <= 1) return;
+  data.tabs.splice(i, 1);
+  if (selTab >= data.tabs.length) selTab = data.tabs.length - 1;
+  selSubtab = 0;
+  if (pvTab >= data.tabs.length) pvTab = data.tabs.length - 1;
+  update();
+}
+function addSubtab(ti) {
+  data.tabs[ti].subtabs.push({ id: uid(), name: "新規サブタブ", card: { title: "タイトル", text: "説明文", colorStart: "#d0d0d0", colorEnd: "#b0b0b0" }, listItems: [] });
+  update();
+}
+function removeSubtab(ti, si) {
+  if (data.tabs[ti].subtabs.length <= 1) return;
+  data.tabs[ti].subtabs.splice(si, 1);
+  if (selSubtab >= data.tabs[ti].subtabs.length) selSubtab = data.tabs[ti].subtabs.length - 1;
+  update();
+}
+function addListItem(ti, si) {
+  data.tabs[ti].subtabs[si].listItems.push({ id: uid(), title: "新規項目", subtitle: "詳細", url: "" });
+  update();
+}
+function removeListItem(ti, si, li) {
+  data.tabs[ti].subtabs[si].listItems.splice(li, 1);
+  update();
+}
+function moveItem(ti, si, li, dir) {
+  const items = data.tabs[ti].subtabs[si].listItems;
+  const ni = li + dir;
+  if (ni < 0 || ni >= items.length) return;
+  [items[li], items[ni]] = [items[ni], items[li]];
+  update();
+}
+
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+function update() {
+  renderEditor();
+  renderPreview();
+  if (currentView === "code") {
+    document.getElementById("codeOutput").textContent = generateHTML();
+  }
+}
+
+// ===== GENERATE HTML =====
+function generateHTML() {
+  const accent = data.accentColor;
+  const titleColor = data.header.titleColor;
+  const titleFontSize = data.header.titleFontSize;
+  const titleFontWeight = data.header.titleFontWeight;
+  
+  const tabsHTML = data.tabs.map((tab, i) =>
+    `<div class="main-tab${i===0?' active':''}" data-tab="${i}" data-title="${esc(tab.headerTitle)}">${esc(tab.name)}</div>`
+  ).join("\n        ");
+
+  const slidesHTML = data.tabs.map((tab, ti) => {
+    const stHTML = tab.subtabs.map((st, si) =>
+      `<div class="subtab${si===0?' active':''}" data-slide="${ti}" data-subtab="${si}">${esc(st.name)}</div>`
+    ).join("\n                    ");
+    const cHTML = tab.subtabs.map((st, si) => {
+      const items = st.listItems.map(item => {
+        const hasUrl = item.url && item.url.trim();
+        const inner = `
+                                <div class="list-content">
+                                    <div class="list-title">${esc(item.title)}</div>
+                                    <div class="list-subtitle">${esc(item.subtitle)}</div>
+                                </div>
+                                <div class="list-arrow">›</div>`;
+        if (hasUrl) {
+          return `
+                            <a href="${esc(item.url.trim())}" target="_blank" rel="noopener noreferrer" class="content-list-item" style="text-decoration:none;color:inherit;display:flex;align-items:center;">${inner}
+                            </a>`;
+        }
+        return `
+                            <div class="content-list-item">${inner}
+                            </div>`;
+      }).join("");
+      return `
+                    <div class="subtab-content${si===0?' active':''}" data-slide="${ti}" data-content="${si}">
+                        <div class="content-card" style="background:linear-gradient(135deg,${st.card.colorStart} 0%,${st.card.colorEnd} 100%);">
+                            <div class="content-card-title">${esc(st.card.title)}</div>
+                            <div class="content-card-text">${esc(st.card.text)}</div>
+                        </div>
+                        <div class="content-list">${items}
+                        </div>
+                    </div>`;
+    }).join("");
+    return `
+            <div class="carousel-slide${ti===0?' active':''}">
+                <div class="subtabs-container" id="subtabs-${ti}">
+                    ${stHTML}
+                </div>
+                <div class="subtab-content-wrapper">${cHTML}
+                </div>
+            </div>`;
+  }).join("");
+
+  const indHTML = data.tabs.map((_, i) =>
+    `<div class="indicator${i===0?' active':''}" data-slide="${i}"></div>`
+  ).join("\n            ");
+
+  // Calculate responsive font sizes based on the editor setting
+  const mobileFontSize = Math.round(titleFontSize * 1.25);
+  const tabletFontSize = Math.round(titleFontSize * 1.875);
+  const desktopFontSize = Math.round(titleFontSize * 2.5);
+
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>モバイルページ</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; background-color: #e8e8e8; max-width: 100%; overflow-x: hidden; }
+        @media (min-width: 768px) { body { display: flex; flex-direction: column; align-items: center; } .header-grid, .main-tabs-container, .carousel-container { max-width: 768px; } .header-grid { width: 768px; } }
+        .header-grid { width: 100vw; height: 75vw; background: linear-gradient(${data.header.bgAngle}deg, ${data.header.gradientStart} 0%, ${data.header.gradientEnd} 100%); display: flex; justify-content: center; align-items: flex-end; padding-bottom: 30px; position: relative; }
+        .vertical-title { writing-mode: vertical-rl; font-size: ${mobileFontSize}px; color: ${titleColor}; font-weight: ${titleFontWeight}; letter-spacing: 0.1em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); transition: opacity 0.3s ease; }
+        @media (min-width: 768px) { .vertical-title { font-size: ${tabletFontSize}px; } }
+        @media (min-width: 1024px) { .vertical-title { font-size: ${desktopFontSize}px; } .header-grid { height: 60vw; max-height: 600px; } }
+        .main-tabs-container { display: flex; background-color: white; border-bottom: 2px solid #e0e0e0; }
+        .main-tab { flex: 1; padding: 16px; text-align: center; font-size: 32px; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s ease; background-color: white; }
+        .main-tab.active { color: ${accent}; border-bottom-color: ${accent}; background-color: #f9f9ff; }
+        .main-tab:hover { background-color: #f5f5f5; }
+        .carousel-container { position: relative; background-color: white; }
+        .carousel-wrapper { display: flex; }
+        .carousel-slide { min-width: 100%; display: none; }
+        .carousel-slide.active { display: block; }
+        .subtabs-container { display: flex; background: white; padding: 16px 20px; gap: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; border-bottom: 1px solid #f0f0f0; }
+        .subtabs-container::-webkit-scrollbar { display: none; }
+        .subtab { padding: 20px 48px; border-radius: 0px; background: #f0f0f0; color: #666; font-size: 28px; white-space: nowrap; cursor: pointer; transition: all 0.3s ease; flex-shrink: 0; }
+        .subtab.active { background: ${accent}; color: white; box-shadow: 0 2px 8px ${accent}4d; }
+        .subtab:active { transform: scale(0.95); }
+        .subtab-content-wrapper { background: white; }
+        .subtab-content { display: none; padding: 24px 20px; animation: fadeIn 0.3s ease; }
+        .subtab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .content-card { border-radius: 12px; padding: 30px 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .content-card-title { font-size: 40px; font-weight: bold; color: #333; margin-bottom: 12px; }
+        .content-card-text { font-size: 30px; color: #555; line-height: 1.8; }
+        .content-list { background: white; }
+        .content-list-item { display: flex; align-items: center; padding: 16px 0; border-bottom: 1px solid #f0f0f0; }
+        .content-list-item:last-child { border-bottom: none; }
+        a.content-list-item:hover { background-color: #f8f8f8; }
+        .list-content { flex: 1; }
+        .list-title { font-size: 36px; font-weight: bold; color: #222; margin-bottom: 4px; }
+        .list-subtitle { font-size: 30px; color: #555; }
+        .list-arrow { color: #ccc; font-size: 48px; margin-left: 8px; }
+        .carousel-indicators { display: flex; justify-content: center; padding: 20px; gap: 10px; background: white; }
+        .indicator { width: 10px; height: 10px; border-radius: 50%; background-color: #ddd; cursor: pointer; transition: all 0.3s ease; }
+        .indicator.active { background-color: ${accent}; width: 30px; border-radius: 5px; }
+        .carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); background-color: rgba(255,255,255,0.95); border: none; width: 44px; height: 44px; border-radius: 50%; font-size: 24px; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 12px rgba(0,0,0,0.15); z-index: 10; transition: all 0.2s; }
+        .carousel-nav:active { transform: translateY(-50%) scale(0.9); }
+        .carousel-nav.prev { left: 10px; }
+        .carousel-nav.next { right: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header-grid">
+        <h1 class="vertical-title" id="main-title">${esc(data.header.title)}</h1>
+    </div>
+    <div class="main-tabs-container">
+        ${tabsHTML}
+    </div>
+    <div class="carousel-container">
+        <button class="carousel-nav prev" onclick="changeMainSlide(-1)">‹</button>
+        <button class="carousel-nav next" onclick="changeMainSlide(1)">›</button>
+        <div class="carousel-wrapper">${slidesHTML}
+        </div>
+        <div class="carousel-indicators">
+            ${indHTML}
+        </div>
+    </div>
+    <script>
+        let currentMainSlide = 0;
+        const mainSlides = document.querySelectorAll('.carousel-slide');
+        const mainTabs = document.querySelectorAll('.main-tab');
+        const indicators = document.querySelectorAll('.indicator');
+        const currentSubTabs = [${data.tabs.map(() => "0").join(", ")}];
+        mainTabs.forEach((tab, index) => { tab.addEventListener('click', () => goToMainSlide(index)); });
+        indicators.forEach((ind, index) => { ind.addEventListener('click', () => goToMainSlide(index)); });
+        document.querySelectorAll('.subtab').forEach(subtab => {
+            subtab.addEventListener('click', function() { goToSubTab(parseInt(this.dataset.slide), parseInt(this.dataset.subtab)); });
+        });
+        function changeMainSlide(direction) { let n = currentMainSlide + direction; if (n < 0) n = mainSlides.length - 1; if (n >= mainSlides.length) n = 0; goToMainSlide(n); }
+        function goToMainSlide(index) {
+            mainSlides[currentMainSlide].classList.remove('active'); mainTabs[currentMainSlide].classList.remove('active'); indicators[currentMainSlide].classList.remove('active');
+            currentMainSlide = index; mainSlides[index].classList.add('active'); mainTabs[index].classList.add('active'); indicators[index].classList.add('active');
+            const mainTitle = document.getElementById('main-title'); mainTitle.style.opacity = '0';
+            setTimeout(() => { mainTitle.textContent = mainTabs[index].dataset.title; mainTitle.style.opacity = '1'; }, 300);
+        }
+        function goToSubTab(slideIndex, subtabIndex) {
+            const subtabs = document.querySelectorAll('.subtab[data-slide="' + slideIndex + '"]');
+            const contents = document.querySelectorAll('.subtab-content[data-slide="' + slideIndex + '"]');
+            subtabs[currentSubTabs[slideIndex]].classList.remove('active'); contents[currentSubTabs[slideIndex]].classList.remove('active');
+            currentSubTabs[slideIndex] = subtabIndex; subtabs[subtabIndex].classList.add('active'); contents[subtabIndex].classList.add('active');
+            const container = document.getElementById('subtabs-' + slideIndex); const active = subtabs[subtabIndex];
+            container.scrollTo({ left: active.offsetLeft - container.offsetWidth / 2 + active.offsetWidth / 2, behavior: 'smooth' });
+        }
+        let touchStartX = 0, touchEndX = 0;
+        const cc = document.querySelector('.carousel-container');
+        cc.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
+        cc.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; const diff = touchEndX - touchStartX; if (diff < -50) changeMainSlide(1); if (diff > 50) changeMainSlide(-1); });
+    <\\/script>
 </body>
 </html>`;
+}
 
-    const blob = new Blob([tpl], {type:"text/html"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "nav-carousel-page.html";
-    a.click();
-    URL.revokeObjectURL(url);
-    alert("✅ HTMLを出力しました");
-  }
+// ===== EXPORT =====
+document.getElementById("dlBtn").addEventListener("click", () => {
+  const html = generateHTML().replace('<\\/script>', '</' + 'script>');
+  const blob = new Blob([html], { type: "text/html" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "mobile_page.html";
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
 
-  // ===== Misc =====
-  function refresh(){ renderPreview(); }
-  function toggleSwipeHint(){ toggleSwipeHint(); } // (avoid name collision in some bundlers)
-  function refresh(){ renderPreview(); }
+document.getElementById("copyBtn").addEventListener("click", () => {
+  const html = generateHTML().replace('<\\/script>', '</' + 'script>');
+  navigator.clipboard.writeText(html).then(() => {
+    const btn = document.getElementById("copyBtn");
+    btn.textContent = "✓ コピー完了";
+    setTimeout(() => btn.textContent = "コピー", 2000);
+  });
+});
 
-  // init
-  window.onload = loadUI;
-</script>
-
-<script>
-  // fix: above export used refresh() name; keep stable API
-  function refresh(){ renderPreview(); }
+// Initial render
+update();
 </script>
 </body>
 </html>
