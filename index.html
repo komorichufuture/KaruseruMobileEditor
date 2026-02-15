@@ -66,23 +66,40 @@
   .small-btn.danger { background: #7f1d1d; color: #fca5a5; }
   .small-btn.danger:hover { background: #991b1b; }
   .small-btn.add { background: var(--bg3); color: var(--text2); }
+  .small-btn.sync { background: #164e63; color: #67e8f9; }
+  .small-btn.sync:hover { background: #155e75; }
   .list-item-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 6px; }
   .list-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
   .list-item-num { font-size: 11px; color: var(--text2); font-family: monospace; }
   .list-item-actions { display: flex; gap: 4px; }
   .empty-msg { font-size: 12px; color: var(--text2); font-style: italic; }
+  
+  /* Image preview in editor */
+  .image-preview { margin-top: 6px; border-radius: 6px; overflow: hidden; background: var(--bg3); }
+  .image-preview img { width: 100%; max-height: 120px; object-fit: cover; display: block; }
+  .image-preview-placeholder { padding: 20px; text-align: center; color: var(--text2); font-size: 11px; }
+
+  /* Toggle switch */
+  .toggle-switch { position: relative; width: 44px; height: 24px; flex-shrink: 0; }
+  .toggle-switch input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg3); transition: 0.3s; border-radius: 24px; }
+  .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: var(--text2); transition: 0.3s; border-radius: 50%; }
+  .toggle-switch input:checked + .toggle-slider { background-color: var(--blue); }
+  .toggle-switch input:checked + .toggle-slider:before { transform: translateX(20px); background-color: white; }
 
   /* Preview */
-  .preview-frame { max-width: 420px; margin: 0 auto; background: #e5e7eb; min-height: 100%; box-shadow: 0 25px 50px rgba(0,0,0,0.3); font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; }
+  .preview-frame { max-width: 420px; margin: 0 auto; min-height: 100%; box-shadow: 0 25px 50px rgba(0,0,0,0.3); font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; }
   .pv-header { display: flex; justify-content: center; align-items: flex-end; padding-bottom: 30px; height: 280px; }
-  .pv-title { writing-mode: vertical-rl; letter-spacing: 0.1em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); transition: opacity 0.3s; }
+  .pv-title { writing-mode: vertical-rl; letter-spacing: 0.1em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); transition: filter 0.8s ease-in-out, opacity 0.3s; }
+  .pv-title.blur-active { filter: blur(8px); }
   .pv-main-tabs { display: flex; background: white; border-bottom: 2px solid #e0e0e0; }
   .pv-main-tab { flex: 1; padding: 12px; text-align: center; font-size: 16px; font-weight: bold; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.3s; background: white; border-top: none; border-left: none; border-right: none; }
   .pv-main-tab:hover { background: #f5f5f5; }
   .pv-subtabs { display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; background: white; border-bottom: 1px solid #f0f0f0; }
   .pv-subtab { padding: 8px 20px; border-radius: 2px; font-size: 13px; white-space: nowrap; cursor: pointer; transition: all 0.3s; flex-shrink: 0; border: none; font-weight: 500; }
   .pv-content { padding: 16px; background: white; }
-  .pv-card { border-radius: 12px; padding: 20px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .pv-card { border-radius: 12px; padding: 20px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; }
+  .pv-card-image { width: calc(100% + 40px); margin: -20px -20px 15px -20px; max-height: 150px; object-fit: cover; display: block; }
   .pv-card-title { font-size: 18px; font-weight: bold; color: #333; margin-bottom: 6px; }
   .pv-card-text { font-size: 14px; color: #555; line-height: 1.8; }
   .pv-list-item { display: flex; align-items: center; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
@@ -128,30 +145,38 @@ let data = {
     bgAngle: 135,
     titleColor: "#ffffff",
     titleFontSize: 48,
-    titleFontWeight: "bold"
+    titleFontWeight: "bold",
+    blurAnimation: {
+      enabled: false,
+      blurAmount: 8,
+      minInterval: 2000,
+      maxInterval: 5000,
+      duration: 800
+    }
   },
   accentColor: "#666666",
+  pageBgColor: "#e8e8e8",
   tabs: [
     {
       id: "t0", name: "タブ1", headerTitle: "タブ1タイトル",
       subtabs: [
-        { id: "s0", name: "サブタブ1", card: { title: "カードタイトル", text: "カードの説明文がここに入ります。", colorStart: "#cccccc", colorEnd: "#aaaaaa" },
+        { id: "s0", name: "サブタブ1", card: { title: "カードタイトル", text: "カードの説明文がここに入ります。", colorStart: "#cccccc", colorEnd: "#aaaaaa", imageUrl: "" },
           listItems: [{ id: "l0", title: "リスト項目1", subtitle: "2026年2月15日", url: "" }, { id: "l1", title: "リスト項目2", subtitle: "2026年2月20日", url: "" }] },
-        { id: "s1", name: "サブタブ2", card: { title: "カード2", text: "説明文2", colorStart: "#d0d0d0", colorEnd: "#b8b8b8" },
+        { id: "s1", name: "サブタブ2", card: { title: "カード2", text: "説明文2", colorStart: "#d0d0d0", colorEnd: "#b8b8b8", imageUrl: "" },
           listItems: [{ id: "l2", title: "項目", subtitle: "詳細", url: "" }] }
       ]
     },
     {
       id: "t1", name: "タブ2", headerTitle: "タブ2タイトル",
       subtabs: [
-        { id: "s2", name: "サブタブ", card: { title: "タイトル", text: "説明", colorStart: "#d0d0d0", colorEnd: "#b8b8b8" },
+        { id: "s2", name: "サブタブ", card: { title: "タイトル", text: "説明", colorStart: "#d0d0d0", colorEnd: "#b8b8b8", imageUrl: "" },
           listItems: [{ id: "l3", title: "TOP3", subtitle: "閲覧数 15,234", url: "" }] }
       ]
     },
     {
       id: "t2", name: "タブ3", headerTitle: "タブ3タイトル",
       subtabs: [
-        { id: "s3", name: "サブタブ", card: { title: "タイトル", text: "説明文", colorStart: "#c8c8c8", colorEnd: "#a0a0a0" },
+        { id: "s3", name: "サブタブ", card: { title: "タイトル", text: "説明文", colorStart: "#c8c8c8", colorEnd: "#a0a0a0", imageUrl: "" },
           listItems: [{ id: "l4", title: "項目A", subtitle: "詳細 / 補足", url: "" }, { id: "l5", title: "項目B", subtitle: "詳細情報", url: "" }] }
       ]
     }
@@ -161,6 +186,9 @@ let data = {
 let selTab = 0, selSubtab = 0, pvTab = 0, pvSubtabs = {};
 let _uid = 200;
 const uid = () => "id_" + (_uid++);
+
+// Blur animation timer
+let blurAnimationTimer = null;
 
 // ===== VIEW TOGGLE =====
 let currentView = "split";
@@ -187,6 +215,59 @@ function applyView() {
     ep.style.display = "none"; pp.style.display = "none"; cp.style.display = "";
     document.getElementById("codeOutput").textContent = generateHTML();
   }
+}
+
+// ===== BLUR ANIMATION =====
+function startBlurAnimation() {
+  stopBlurAnimation();
+  if (!data.header.blurAnimation.enabled) return;
+  
+  const scheduleNextBlur = () => {
+    const { minInterval, maxInterval, duration, blurAmount } = data.header.blurAnimation;
+    const randomDelay = Math.random() * (maxInterval - minInterval) + minInterval;
+    
+    blurAnimationTimer = setTimeout(() => {
+      const titleEl = document.querySelector('.pv-title');
+      if (titleEl && data.header.blurAnimation.enabled) {
+        titleEl.style.filter = `blur(${blurAmount}px)`;
+        titleEl.style.transition = `filter ${duration}ms ease-in-out`;
+        
+        setTimeout(() => {
+          if (titleEl) {
+            titleEl.style.filter = 'blur(0px)';
+          }
+        }, duration);
+      }
+      
+      if (data.header.blurAnimation.enabled) {
+        scheduleNextBlur();
+      }
+    }, randomDelay);
+  };
+  
+  scheduleNextBlur();
+}
+
+function stopBlurAnimation() {
+  if (blurAnimationTimer) {
+    clearTimeout(blurAnimationTimer);
+    blurAnimationTimer = null;
+  }
+  const titleEl = document.querySelector('.pv-title');
+  if (titleEl) {
+    titleEl.style.filter = 'blur(0px)';
+  }
+}
+
+// ===== SYNC FUNCTIONS =====
+function syncPageBgToHeader() {
+  data.pageBgColor = data.header.gradientEnd;
+  update();
+}
+
+function syncPageBgToHeaderStart() {
+  data.pageBgColor = data.header.gradientStart;
+  update();
 }
 
 // ===== RENDER EDITOR =====
@@ -230,6 +311,41 @@ function renderEditor() {
       <span class="color-val">${data.accentColor}</span></div>
   </div><hr class="divider">`;
 
+  // Page Background section
+  h += `<div class="section">
+    <div class="section-header"><div class="section-title">ページ背景</div></div>
+    <div class="field-row"><div class="field-label">背景色</div>
+      <input type="color" value="${data.pageBgColor}" onchange="data.pageBgColor=this.value;update()">
+      <span class="color-val">${data.pageBgColor}</span></div>
+    <div class="field-row"><div class="field-label"></div>
+      <button class="small-btn sync" onclick="syncPageBgToHeader()">🔗 ヘッダー終了色に合わせる</button></div>
+    <div class="field-row"><div class="field-label"></div>
+      <button class="small-btn sync" onclick="syncPageBgToHeaderStart()">🔗 ヘッダー開始色に合わせる</button></div>
+  </div><hr class="divider">`;
+
+  // Blur Animation section
+  h += `<div class="section">
+    <div class="section-header"><div class="section-title">ブラーアニメーション</div></div>
+    <div class="field-row"><div class="field-label">有効</div>
+      <label class="toggle-switch">
+        <input type="checkbox" ${data.header.blurAnimation.enabled ? 'checked' : ''} onchange="data.header.blurAnimation.enabled=this.checked;update();if(this.checked){startBlurAnimation();}else{stopBlurAnimation();}">
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="color-val">${data.header.blurAnimation.enabled ? 'ON' : 'OFF'}</span></div>
+    <div class="field-row"><div class="field-label">ブラー強度</div>
+      <input type="number" value="${data.header.blurAnimation.blurAmount}" min="1" max="30" style="width:70px" onchange="data.header.blurAnimation.blurAmount=parseInt(this.value)||8;update()">
+      <span class="color-val">px</span></div>
+    <div class="field-row"><div class="field-label">最小間隔</div>
+      <input type="number" value="${data.header.blurAnimation.minInterval}" min="500" max="10000" step="100" style="width:80px" onchange="data.header.blurAnimation.minInterval=parseInt(this.value)||2000;update()">
+      <span class="color-val">ms</span></div>
+    <div class="field-row"><div class="field-label">最大間隔</div>
+      <input type="number" value="${data.header.blurAnimation.maxInterval}" min="1000" max="20000" step="100" style="width:80px" onchange="data.header.blurAnimation.maxInterval=parseInt(this.value)||5000;update()">
+      <span class="color-val">ms</span></div>
+    <div class="field-row"><div class="field-label">持続時間</div>
+      <input type="number" value="${data.header.blurAnimation.duration}" min="100" max="3000" step="100" style="width:80px" onchange="data.header.blurAnimation.duration=parseInt(this.value)||800;update()">
+      <span class="color-val">ms</span></div>
+  </div><hr class="divider">`;
+
   // Main tabs
   h += `<div class="section">
     <div class="section-header"><div class="section-title">メインタブ</div>
@@ -259,6 +375,8 @@ function renderEditor() {
 
     const st = tab.subtabs[selSubtab];
     if (st) {
+      if (st.card.imageUrl === undefined) st.card.imageUrl = "";
+      
       h += `<div class="section">
         <div class="section-header"><div class="section-title">${esc(st.name)} の設定</div>
           ${tab.subtabs.length > 1 ? `<button class="small-btn danger" onclick="removeSubtab(${selTab},${selSubtab})">削除</button>` : ""}</div>
@@ -266,9 +384,15 @@ function renderEditor() {
           <input type="text" value="${esc(st.name)}" onchange="data.tabs[${selTab}].subtabs[${selSubtab}].name=this.value;update()"></div>
       </div><hr class="divider">`;
 
-      // Card
+      // Card with image
       h += `<div class="section">
         <div class="section-header"><div class="section-title">カード設定</div></div>
+        <div class="field"><div class="field-label">画像URL</div>
+          <input type="text" value="${esc(st.card.imageUrl||'')}" placeholder="https://example.com/image.jpg" onchange="data.tabs[${selTab}].subtabs[${selSubtab}].card.imageUrl=this.value;update()">
+          <div class="image-preview">
+            ${st.card.imageUrl ? `<img src="${esc(st.card.imageUrl)}" onerror="this.parentElement.innerHTML='<div class=\\'image-preview-placeholder\\'>画像を読み込めません</div>'" alt="カード画像">` : '<div class="image-preview-placeholder">📷 画像URLを入力するとプレビューが表示されます</div>'}
+          </div>
+        </div>
         <div class="field"><div class="field-label">カードタイトル</div>
           <input type="text" value="${esc(st.card.title)}" onchange="data.tabs[${selTab}].subtabs[${selSubtab}].card.title=this.value;update()"></div>
         <div class="field"><div class="field-label">カード説明文</div>
@@ -322,7 +446,10 @@ function renderPreview() {
   const accent = data.accentColor;
   const pvSt = pvSubtabs[pvTab] || 0;
 
-  let h = `<div class="preview-frame">`;
+  // Update preview pane background
+  pp.style.background = data.pageBgColor;
+
+  let h = `<div class="preview-frame" style="background:${data.pageBgColor};">`;
   // Header with dynamic title styles
   h += `<div class="pv-header" style="background:linear-gradient(${data.header.bgAngle}deg,${data.header.gradientStart},${data.header.gradientEnd})">
     <div class="pv-title" style="color:${data.header.titleColor};font-size:${data.header.titleFontSize}px;font-weight:${data.header.titleFontWeight}">${esc(tab ? tab.headerTitle : data.header.title)}</div></div>`;
@@ -339,8 +466,11 @@ function renderPreview() {
     ).join("")}</div>`;
 
     if (st) {
+      if (st.card.imageUrl === undefined) st.card.imageUrl = "";
+      
       h += `<div class="pv-content">
         <div class="pv-card" style="background:linear-gradient(135deg,${st.card.colorStart},${st.card.colorEnd})">
+          ${st.card.imageUrl ? `<img class="pv-card-image" src="${esc(st.card.imageUrl)}" onerror="this.style.display='none'" alt="カード画像">` : ''}
           <div class="pv-card-title">${esc(st.card.title)}</div>
           <div class="pv-card-text">${esc(st.card.text)}</div></div>
         <div>`;
@@ -360,12 +490,17 @@ function renderPreview() {
   }
   h += `</div>`;
   pp.innerHTML = h;
+  
+  // Restart blur animation after preview render
+  if (data.header.blurAnimation.enabled) {
+    startBlurAnimation();
+  }
 }
 
 // ===== DATA OPERATIONS =====
 function addTab() {
   data.tabs.push({ id: uid(), name: "タブ" + (data.tabs.length + 1), headerTitle: "新しいタブ",
-    subtabs: [{ id: uid(), name: "サブタブ", card: { title: "タイトル", text: "説明文", colorStart: "#cccccc", colorEnd: "#aaaaaa" }, listItems: [] }] });
+    subtabs: [{ id: uid(), name: "サブタブ", card: { title: "タイトル", text: "説明文", colorStart: "#cccccc", colorEnd: "#aaaaaa", imageUrl: "" }, listItems: [] }] });
   update();
 }
 function removeTab(i) {
@@ -377,7 +512,7 @@ function removeTab(i) {
   update();
 }
 function addSubtab(ti) {
-  data.tabs[ti].subtabs.push({ id: uid(), name: "新規サブタブ", card: { title: "タイトル", text: "説明文", colorStart: "#d0d0d0", colorEnd: "#b0b0b0" }, listItems: [] });
+  data.tabs[ti].subtabs.push({ id: uid(), name: "新規サブタブ", card: { title: "タイトル", text: "説明文", colorStart: "#d0d0d0", colorEnd: "#b0b0b0", imageUrl: "" }, listItems: [] });
   update();
 }
 function removeSubtab(ti, si) {
@@ -418,6 +553,8 @@ function generateHTML() {
   const titleColor = data.header.titleColor;
   const titleFontSize = data.header.titleFontSize;
   const titleFontWeight = data.header.titleFontWeight;
+  const pageBgColor = data.pageBgColor;
+  const blurAnim = data.header.blurAnimation;
   
   const tabsHTML = data.tabs.map((tab, i) =>
     `<div class="main-tab${i===0?' active':''}" data-tab="${i}" data-title="${esc(tab.headerTitle)}">${esc(tab.name)}</div>`
@@ -428,6 +565,10 @@ function generateHTML() {
       `<div class="subtab${si===0?' active':''}" data-slide="${ti}" data-subtab="${si}">${esc(st.name)}</div>`
     ).join("\n                    ");
     const cHTML = tab.subtabs.map((st, si) => {
+      const imageUrl = st.card.imageUrl || "";
+      const imageHTML = imageUrl ? `
+                        <img class="content-card-image" src="${esc(imageUrl)}" onerror="this.style.display='none'" alt="カード画像">` : '';
+      
       const items = st.listItems.map(item => {
         const hasUrl = item.url && item.url.trim();
         const inner = `
@@ -447,7 +588,7 @@ function generateHTML() {
       }).join("");
       return `
                     <div class="subtab-content${si===0?' active':''}" data-slide="${ti}" data-content="${si}">
-                        <div class="content-card" style="background:linear-gradient(135deg,${st.card.colorStart} 0%,${st.card.colorEnd} 100%);">
+                        <div class="content-card" style="background:linear-gradient(135deg,${st.card.colorStart} 0%,${st.card.colorEnd} 100%);">${imageHTML}
                             <div class="content-card-title">${esc(st.card.title)}</div>
                             <div class="content-card-text">${esc(st.card.text)}</div>
                         </div>
@@ -469,10 +610,37 @@ function generateHTML() {
     `<div class="indicator${i===0?' active':''}" data-slide="${i}"></div>`
   ).join("\n            ");
 
-  // Calculate responsive font sizes based on the editor setting
   const mobileFontSize = Math.round(titleFontSize * 1.25);
   const tabletFontSize = Math.round(titleFontSize * 1.875);
   const desktopFontSize = Math.round(titleFontSize * 2.5);
+
+  // Blur animation script
+  const blurScript = blurAnim.enabled ? `
+        // Blur Animation
+        (function() {
+            const blurConfig = {
+                blurAmount: ${blurAnim.blurAmount},
+                minInterval: ${blurAnim.minInterval},
+                maxInterval: ${blurAnim.maxInterval},
+                duration: ${blurAnim.duration}
+            };
+            
+            function scheduleBlur() {
+                const delay = Math.random() * (blurConfig.maxInterval - blurConfig.minInterval) + blurConfig.minInterval;
+                setTimeout(() => {
+                    const title = document.getElementById('main-title');
+                    if (title) {
+                        title.style.transition = 'filter ' + blurConfig.duration + 'ms ease-in-out';
+                        title.style.filter = 'blur(' + blurConfig.blurAmount + 'px)';
+                        setTimeout(() => {
+                            title.style.filter = 'blur(0px)';
+                        }, blurConfig.duration);
+                    }
+                    scheduleBlur();
+                }, delay);
+            }
+            scheduleBlur();
+        })();` : '';
 
   return `<!DOCTYPE html>
 <html lang="ja">
@@ -482,10 +650,10 @@ function generateHTML() {
     <title>モバイルページ</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; background-color: #e8e8e8; max-width: 100%; overflow-x: hidden; }
+        body { font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; background-color: ${pageBgColor}; max-width: 100%; overflow-x: hidden; }
         @media (min-width: 768px) { body { display: flex; flex-direction: column; align-items: center; } .header-grid, .main-tabs-container, .carousel-container { max-width: 768px; } .header-grid { width: 768px; } }
         .header-grid { width: 100vw; height: 75vw; background: linear-gradient(${data.header.bgAngle}deg, ${data.header.gradientStart} 0%, ${data.header.gradientEnd} 100%); display: flex; justify-content: center; align-items: flex-end; padding-bottom: 30px; position: relative; }
-        .vertical-title { writing-mode: vertical-rl; font-size: ${mobileFontSize}px; color: ${titleColor}; font-weight: ${titleFontWeight}; letter-spacing: 0.1em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); transition: opacity 0.3s ease; }
+        .vertical-title { writing-mode: vertical-rl; font-size: ${mobileFontSize}px; color: ${titleColor}; font-weight: ${titleFontWeight}; letter-spacing: 0.1em; text-shadow: 2px 2px 4px rgba(0,0,0,0.3); transition: opacity 0.3s ease, filter 0.8s ease-in-out; }
         @media (min-width: 768px) { .vertical-title { font-size: ${tabletFontSize}px; } }
         @media (min-width: 1024px) { .vertical-title { font-size: ${desktopFontSize}px; } .header-grid { height: 60vw; max-height: 600px; } }
         .main-tabs-container { display: flex; background-color: white; border-bottom: 2px solid #e0e0e0; }
@@ -505,7 +673,8 @@ function generateHTML() {
         .subtab-content { display: none; padding: 24px 20px; animation: fadeIn 0.3s ease; }
         .subtab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .content-card { border-radius: 12px; padding: 30px 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .content-card { border-radius: 12px; padding: 30px 20px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); overflow: hidden; }
+        .content-card-image { width: calc(100% + 40px); margin: -30px -20px 20px -20px; max-height: 200px; object-fit: cover; display: block; }
         .content-card-title { font-size: 40px; font-weight: bold; color: #333; margin-bottom: 12px; }
         .content-card-text { font-size: 30px; color: #555; line-height: 1.8; }
         .content-list { background: white; }
@@ -571,6 +740,7 @@ function generateHTML() {
         const cc = document.querySelector('.carousel-container');
         cc.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; });
         cc.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; const diff = touchEndX - touchStartX; if (diff < -50) changeMainSlide(1); if (diff > 50) changeMainSlide(-1); });
+${blurScript}
     <\\/script>
 </body>
 </html>`;
